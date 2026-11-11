@@ -1,0 +1,1043 @@
+[
+    {
+        "uri": "/",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@index",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "about",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@about",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "activate-your-account/{user_id}-{slug}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@activateYourAccount",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "admin/add-category",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CategoryController@addCategory",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-city",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CityController@addCity",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-contact-info-item/{column_name}/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactInfoController@editContactInfo",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-contact-info-item",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactInfoController@addContactInfo",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-country",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CountryController@addCountry",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-meta-tags",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\MetaTagController@addMetaTag",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/add-user",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@addUser",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/change-password",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AdminController@change_password",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/dashboard",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AdminController@dashboard",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-category/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CategoryController@deleteCategory",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-city/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CityController@deleteCity",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-contact-info-item/{column_name}/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactInfoController@deleteContactInfo",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-contact-message/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactMessageController@deleteContactMessage",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-country/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CountryController@deleteCountry",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-listing/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@deletePostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-meta-tag/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\MetaTagController@deleteMetaTag",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/delete-user/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@deleteUser",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-category/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CategoryController@editCategory",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-city/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CityController@editCity",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-contact-info-item/{column_name}/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactInfoController@editContactInfo",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-country/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CountryController@editCountry",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-listing/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@editPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-meta-tags/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\MetaTagController@editMetaTag",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/edit-user/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@editUser",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/export-subscribers/xlsx",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\SubscribeController@exportSubscribers",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/forgot-password",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AdminController@forgot_password_link",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "admin/logout",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": "adminlogout",
+        "action": "App\\Http\\Controllers\\AdminController@logout",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/mark-featured/listing/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@markFeaturedPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/mark-published/listing/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@markPublishedPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/reset-password/{user_id}-{slug}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AdminController@forgot_reset_password",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "admin/search-cities/{name}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CityController@searchCities",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/unmark-featured/listing/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@unmarkFeaturedPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-categories",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CategoryController@viewCategory",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-cities",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CityController@viewCity",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-contact-info-item",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactInfoController@viewContactInfo",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-contact-messages",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactMessageController@viewContactMessage",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-countries",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\CountryController@viewCountry",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-listing/{ad_type?}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@viewPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-meta-tags",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\MetaTagController@viewMetaTag",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-pending-listing",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@viewPendingPostAds",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-subscribers",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\SubscribeController@viewSubscribers",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin/view-users",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@viewUser",
+        "middleware": [
+            "web",
+            "role:admin"
+        ]
+    },
+    {
+        "uri": "admin",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": "adminlogin",
+        "action": "App\\Http\\Controllers\\AdminController@login",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "contact",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\ContactMessageController@contact",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "forgot-password",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@forgot_password_link",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "listing-details/{id}/{slug}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@listing_details",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "listing/category/{id}/{slug?}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@listings",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "listing/search/results",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@searchListings",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "listing",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@listings",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "login",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@login",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "reset-password/{user_id}-{slug}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@forgot_reset_password",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "sign-up",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@register",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "subscribe",
+        "methods": [
+            "POST"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AjaxController@subscribe",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "terms-condition",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\FrontController@termsAndCondition",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "up",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "uri": "user/add-listing",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@addPostAds",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/bookmarks",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@bookmarks",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/change-password",
+        "methods": [
+            "POST"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@change_password",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/create/room",
+        "methods": [
+            "POST"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@createMessageRoom",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/dashboard",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@dashboard",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/delete-listing/{id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@deletePostAds",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/edit-listing/{id}",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@editPostAds",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/get-chat-user-list/{post_id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@getUserChatList",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/get-chats/{post_ad_room_id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@getUserChats",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/get-search-users/{post_id}/{search}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@getSearchChatUsers",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/listing-details/{id}/{slug?}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@viewPostAdsDetails",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/logout",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": "adminlogout",
+        "action": "App\\Http\\Controllers\\UserController@logout",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/messages/{post_id}/{post_slug}/{room_id}={room_slug}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@getRoomMessages",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/messages/{post_id}/{slug}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@messagesPostAdsUserList",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/messages",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@messagesPostAds",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/msg/send",
+        "methods": [
+            "POST"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdMessageController@userMessageSend",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/my-listing/{ad_type?}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\PostAdsController@viewPostAds",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/post-review",
+        "methods": [
+            "POST"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@postRateReview",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/profile",
+        "methods": [
+            "GET",
+            "POST",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@edit_profile",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "user/reviews",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\UserController@reviews",
+        "middleware": [
+            "web",
+            "role:user"
+        ]
+    },
+    {
+        "uri": "view/city-list/{country_id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AjaxController@viewCountryCityList",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "uri": "view/country/code/{country_id}",
+        "methods": [
+            "GET",
+            "HEAD"
+        ],
+        "name": null,
+        "action": "App\\Http\\Controllers\\AjaxController@viewCountryCode",
+        "middleware": [
+            "web"
+        ]
+    }
+]
