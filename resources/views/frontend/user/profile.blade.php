@@ -1,0 +1,199 @@
+@extends('layouts.frontLayout.front-design')
+@section('content')
+
+<!-- Breadscrumb Section -->
+<div class="breadcrumb-bar">
+	<div class="container">
+		<div class="row align-items-center text-center">
+    		<div class="col-md-12 col-12">
+	    	    <h2 class="breadcrumb-title">Profile</h2>
+		    	<nav aria-label="breadcrumb" class="page-breadcrumb">
+					<ol class="breadcrumb">
+						<li class="breadcrumb-item"><a href="{{ url('/') }}">Home</a></li>
+						<li class="breadcrumb-item active" aria-current="page">Profile</li>
+					</ol>
+				</nav>							
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /Breadscrumb Section -->
+
+<!-- Profile Content -->
+<div class="dashboard-content listing-section ">		
+	<div class="container">
+		
+		@include('frontend.user.user-profile-bar')
+		
+		<div class="profile-content">
+		   <div class="row dashboard-info">
+			   <div class="col-lg-9">
+				   <div class="card dash-cards">
+						<div class="card-header">
+							<h4>Profile Details</h4>																
+						</div>
+                  <div class="card-body">
+                  	<form class="form-horizontal mt-3" method="post" action="{{url('/user/profile')}}">
+               			{{ csrf_field() }}
+						    	<div class="profile-photo">
+								   <div class="profile-img">
+									   <div class="settings-upload-img">
+											<img src="{{ asset('frontend/img/profiles/'.Auth::user()->image ) }}" alt="profile">
+										</div>										    
+										<div class="settings-upload-btn">											    
+											<input type="file" accept="image/*" name="image" class="hide-input image-upload" id="file">
+											<input type="hidden" name="cur_image" value="{{ Auth::user()->image }}">
+											<label for="file" class="file-upload">Upload New photo</label>												
+										</div>	
+										<span>Max file size: 10 MB</span>
+									</div>                                        									
+	                       	<a href="javascript:void(0)" class="profile-img-del"><i class="feather-trash-2"></i></a>						
+								</div>
+								<div class="profile-form">
+
+									<div class="row">
+										<div class="col-lg-6 col-md-6">
+											<div class="form-group">
+											   <label class="col-form-label">Your Full Name</label>
+									        	<div class="pass-group group-img">
+													<span class="lock-icon"><i class="feather-user"></i></span>
+													<input type="text" class="form-control" name="name" value="{{ Auth::user()->name }}">													
+												</div>
+										   </div> 
+										</div>
+										<div class="col-lg-6 col-md-6">
+											<div class="form-group">
+												<label class="col-form-label">Email Address</label>
+												<div class="group-img">
+													<i class="feather-mail"></i>
+													<input type="email" class="form-control" name="email" value="{{ Auth::user()->email }}">
+												</div>
+											</div>
+							    		</div>
+							    	</div>	
+
+									<div class="row">
+										<div class="col-lg-6 col-md-6">
+											<div class="form-group">
+												<label class="col-form-label">Country</label>
+												<div class="pass-group group-img">
+													<select class="form-control select" name="country_id" id="country_id" required>
+		                                    <option selected disabled>Select Country</option>
+		                                    @foreach($countries as $data)
+		                                    	@if(Auth::user()->country_id == $data->id)
+		                                        <option value="{{ $data->id }}" selected>{{ $data->name }} ({{ $data->code }})</option>
+		                                        @else
+		                                        <option value="{{ $data->id }}">{{ $data->name }} ({{ $data->code }})</option>
+		                                        @endif
+		                                    @endforeach
+		                                </select>												
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6 col-md-6">
+											<div class="form-group">
+												<label class="col-form-label">Phone Number</label>
+												<div class="pass-group group-img">
+													<span class="lock-icon"><i class="feather-phone-call"></i></span>
+													<input type="tel" class="form-control" name="phone" id="phone" value="{{ Auth::user()->phone }}">													
+												</div>
+											</div>
+										</div>										
+									</div>
+									<!-- <div class="form-group">
+									   <label class="col-form-label">Notes</label>
+										<div class="pass-group group-img">
+											<textarea rows="4" class="form-control">Mauris vestibulum lorem a condimentum vulputate. Integer vitae turpis turpis. Cras at tincidunt urna. Aenean leo justo, congue et felis a, elementum rutrum felis. Fusce rutrum ipsum eu pretium faucibus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Aenean leo justo, congue et felis a.  Aenean leo justo, congue et felis a.	</textarea>												
+										</div>
+									</div> -->
+									<!-- <div class="row socialmedia-info">
+										<div class="col-lg-6 col-md-6">
+										   <div class="form-group">
+												<label class="col-form-label">Facebook</label>
+												<div class="pass-group group-img">
+													<span class="lock-icon"><i class="fab fa-facebook-f"></i></span>
+													<input type="text" class="form-control" value="https://www.facebook.com/">	
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6 col-md-6">
+											<div class="form-group">
+												<label class="col-form-label">Twitter</label>
+												<div class="pass-group group-img">
+													<span class="lock-icon"><i class="fab fa-twitter"></i></span>
+													<input type="text" class="form-control" value="https://twitter.com/">	
+												</div>
+											</div>
+										</div>											
+									</div> -->
+									<!-- <div class="row socialmedia-info">
+								      <div class="col-lg-6 col-md-6">
+										   <div class="form-group formlast-input">
+												<label class="col-form-label">Google+</label>
+												<div class="pass-group group-img">
+													<span class="lock-icon"><i class="fa-brands fa-google-plus-g"></i></span>
+													<input type="text" class="form-control" value="https://www.google.com/">
+												</div>
+											</div>
+										</div>
+										<div class="col-lg-6 col-md-6">
+										   <div class="form-group formlast-input">
+												<label class="col-form-label">Instagram</label>
+												<div class="pass-group group-img">
+													<span class="lock-icon"><i class="fab fa-instagram"></i></span>
+													<input type="text" class="form-control" value="https://www.instagram.com/">
+												</div>
+											</div>
+										</div>											
+									</div> -->	
+						    	</div> 
+						    	<button class="btn btn-primary" type="submit"> Edit Profile</button>
+						   </form>
+						</div>								
+					</div>	
+				</div>
+            <div class="col-lg-3">
+				   <div class="profile-sidebar">
+					   <div class="card">
+						   <div class="card-header">
+							   <h4>Change Password</h4>
+							</div>	
+                     <div class="card-body">
+                      	<form class="form-horizontal mt-3" method="post" action="{{url('/user/change-password')}}">
+               				{{ csrf_field() }}
+                           <div class="form-group">
+									   <label class="col-form-label">Current Password</label>
+								      <div class="pass-group group-img">
+											<span class="lock-icon"><i class="feather-lock"></i></span>
+											<input type="password" class="form-control pass-input" name="currentPassword" placeholder="Password">
+										</div>
+								   </div>
+                           <div class="form-group">
+									   <label class="col-form-label">New Password</label>
+								      <div class="pass-group group-img">
+											<span class="lock-icon"><i class="feather-lock"></i></span>
+											<input type="password" class="form-control pass-input" name="newPassword">
+											<span class="toggle-password feather-eye-off"></span>
+										</div>
+								   </div>
+                           <div class="form-group">
+									   <label class="col-form-label">Confirm New Password</label>
+								      <div class="pass-group group-img">
+											<span class="lock-icon"><i class="feather-lock"></i></span>
+											<input type="password" class="form-control pass-input" name="confirmPassword">
+											<span class="toggle-password feather-eye-off"></span>
+										</div>
+								   </div>	
+                           <button class="btn btn-primary" type="submit"> Change Password</button>											
+							   </form>								
+							</div>  									
+						</div>							
+					</div>
+				</div>							
+			 </div>				
+		</div>
+	</div>		
+</div>		
+<!-- /Profile Content -->
+
+@endsection

@@ -1,0 +1,56 @@
+/****** MIAN CSS LINKS ******/
+@import "./../css/bootstrap.min.css";
+@import "./../css/style.css";
+@import "./../css/feather.css";
+@import "./../css/owl.carousel.min.css";
+@import "./../plugins/fontawesome/css/fontawesome.min.css";
+@import "./../plugins/fontawesome/css/all.min.css";
+@import "./../plugins/select2/css/select2.min.css";
+@import "./../plugins/aos/aos.css";
+@import "./../plugins/datatables/datatables.min.css";
+@import "./../plugins/sweetalert2/dist/sweetalert2.min.css";
+@import "./../css/select2.min.css";
+
+/****** UTILS ******/
+@import "utils/variables";
+@import "utils/mixins";
+
+/******* BASE *******/
+@import "base/typography";
+@import "base/colors"; 
+@import "base/base";
+@import "base/grid";
+
+/******* COMPONENTS ******/
+@import "components/button";
+
+
+/****** LAYOUT ******/
+@import "layout/footer";
+@import "layout/header";
+@import "layout/breadcrumb";
+@import "layout/select";
+
+/****** PAGES ******/
+@import "pages/home";
+@import "pages/home-two";
+@import "pages/home-three";
+@import "pages/home-four";
+@import "pages/home-five";
+@import "pages/home-six";
+@import "pages/home-seven";
+@import "pages/home-eight";
+@import "pages/home-nine";
+@import "pages/listing";
+@import "pages/common";
+@import "pages/about";
+@import "pages/add-listing";
+@import "pages/faq";
+@import "pages/gallery";
+@import "pages/service-details";
+@import "pages/categories";
+@import "pages/howitworks";
+@import "pages/blog";
+@import "pages/contact";
+@import "pages/authendication";
+@import "pages/pagination";
