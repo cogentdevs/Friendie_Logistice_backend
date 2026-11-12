@@ -179,8 +179,10 @@ class ApiFoundationTest extends TestCase
         $webMiddleware = app(\Illuminate\Contracts\Http\Kernel::class)->getMiddlewareGroups()['web'];
         $this->assertContains(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, $webMiddleware);
         $apiRoutes = collect(app('router')->getRoutes())->filter(fn ($route) => str_starts_with($route->uri(), 'api/'));
-        $this->assertCount(1, $apiRoutes);
-        $this->assertSame('api/v1/health', $apiRoutes->first()->uri());
+        $this->assertSame([
+            'api/v1/categories', 'api/v1/cities', 'api/v1/countries', 'api/v1/currencies',
+            'api/v1/health', 'api/v1/home', 'api/v1/listings', 'api/v1/listings/{id}',
+        ], $apiRoutes->map(fn ($route) => $route->uri())->sort()->values()->all());
     }
 
     public function test_non_api_errors_keep_existing_web_rendering(): void
