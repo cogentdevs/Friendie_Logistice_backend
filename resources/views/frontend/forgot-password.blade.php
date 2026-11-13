@@ -47,6 +47,11 @@
 					<!-- Login Form -->
 					<form class="form-horizontal mt-3" method="post" action="{{ url('/reset-password/'.$user_id.'-'.$slug) }}">
                         {{ csrf_field() }}
+                        @if($errors->any())
+                            <div class="alert alert-danger" role="alert"><ul>
+                                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                            </ul></div>
+                        @endif
 						<div class="form-group">
 							<div class="pass-group group-img">
 							    <i class="feather-lock"></i>

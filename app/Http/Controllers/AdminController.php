@@ -109,73 +109,12 @@ class AdminController extends Controller
     }
 
     public function forgot_password_link(Request $request){
-
-        if($request->isMethod('post')){
-
-            $data = $request->all();
-
-            $user_count = User::where(['email'=>$data['email']])->count();
-
-            if ($user_count == 0) {
-
-                return redirect()->back()->with('flash_message_error','Email Not Found!');
-                
-            } else {
-
-                $get_user = User::where(['email'=> $data['email']])->with('roles')->first();
-
-                $role_name = $get_user->roles->first()->name;
-                
-                if($role_name == "admin"){
-
-                    $mail_data = array(
-                        'user_id'      =>  $get_user->id,
-                        'user_name'      =>  $get_user->name,
-                        'user_email'      =>  $get_user->email
-                    );
-                    // dd($data);
-
-                    Mail::to($get_user->email)->send(new UserForgotPasswrod($mail_data));
-
-                    return redirect()->back()->with('flash_message_success','Reset Password Link Send To Your Email. Check Your E-mail Account And Spam Also.');
-
-                }else{
-
-                    return redirect()->back()->with('flash_message_error','User not have Rights to Access');
-                }                    
-
-            }
-            
-        }
-
-        return view('admin.forgot-password-link');
-
+        return app(\App\Http\Controllers\Auth\WebPasswordResetController::class)
+            ->requestLink($request, 'admin');
     }
 
-    public function forgot_reset_password(Request $request, $user_id, $slug){
-
-        if($request->isMethod('post')){
-
-            $data = $request->all();
-
-            if($request->confirmPassword != $request->newPassword){
-                //Confirm password and new password are same
-                  return redirect()->back()->with('flash_message_error',' New Password and Confirm Password are not same. ');
-            }else{
-
-                $pass = bcrypt($request->newPassword);
-                User::where(['id'=>$user_id])->update
-                ([
-                    'password'=>$pass
-                ]);
-
-                return redirect('/admin')->with('flash_message_success','Password Reset Successfully.');  
-
-            }   
-
-        }   
-
-        return view('admin.forgot-password')->with(compact('user_id', 'slug'));
-
+    public function forgot_reset_password(Request $request, $user_id, #[\SensitiveParameter] $slug){
+        return app(\App\Http\Controllers\Auth\WebPasswordResetController::class)
+            ->reset($request, (string) $user_id, (string) $slug, 'admin');
     }
 }

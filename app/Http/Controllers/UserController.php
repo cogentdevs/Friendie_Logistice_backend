@@ -106,7 +106,8 @@ class UserController extends Controller
 
             $data = $request->all();
             
-            $user = User::where(['id'=>$id])->first();
+            $user = User::where(['id'=>$id])->firstOrFail();
+            app(\App\Services\CustomerEmailChangeService::class)->validateEmail($user, $request->input('email'));
             // image file delete start
             $image = $user->image;
 
@@ -140,8 +141,7 @@ class UserController extends Controller
                 $filename = $data['cur_image'];
             }
 
-            User::where(['id'=>$id])->update
-            ([
+            app(\App\Services\CustomerEmailChangeService::class)->update((int) $id, [
                 'name'=>$data['name'],
                 'email'=>$data['email'],
                 'country_id'=>$data['country_id'],
@@ -191,7 +191,8 @@ class UserController extends Controller
             $data = $request->input();
 
             $request->validate([
-                'g-recaptcha-response' => 'required|captcha'
+                'g-recaptcha-response' => 'required|captcha',
+                'email' => 'required|string|email|max:255',
             ]);
 
             $usercount_email = User::where(['email'=>$data['email']])->count();
@@ -216,19 +217,12 @@ class UserController extends Controller
                 $user->phone = $data['phone'];
                 $user->password = $password;
                 $user->image = 'avatar.jpg';
-                $user->isActive = 0;
+                $user->isActive = 1;
                 $user->isVerified = 0;
                 $user->save();
                 $user->assignRole('user');
 
-                $mail_data = array(
-                    'user_id'      =>  $user->id,
-                    'user_name'      =>  $user->name,
-                    'user_email'      =>  $user->email
-                );
-                // dd($data);
-
-                Mail::to($user->email)->send(new UserEmailVerification($mail_data));
+                app(\App\Services\EmailActivationService::class)->send($user->id);
 
                 return redirect()->back()->with('flash_message_success','Registration Successfull. We sent you a verification mail on your email also check in Spam.');
 
@@ -242,24 +236,9 @@ class UserController extends Controller
 
     }
 
-    public function activateYourAccount(Request $request, $user_id, $slug){
-
-        if($request->isMethod('post')){
-
-            $data = $request->all();
-
-            User::where(['id'=>$user_id])->update
-            ([
-                'isActive'=>1,
-                'isVerified'=>1,
-            ]);
-
-            return redirect('/login')->with('flash_message_success','Your Account Is Activated. Now You Can Login To Your Account.');
-
-        }   
-
-        return view('frontend.activate-account')->with(compact('user_id', 'slug'));
-
+    public function activateYourAccount(Request $request, $user_id, #[\SensitiveParameter] $slug){
+        return app(\App\Http\Controllers\Auth\EmailActivationController::class)
+            ->confirm($request, (string) $user_id, (string) $slug);
     }
 
     public function login(Request $request){
@@ -343,74 +322,13 @@ class UserController extends Controller
     }
 
     public function forgot_password_link(Request $request){
-
-        if($request->isMethod('post')){
-
-            $data = $request->all();
-
-            $user_count = User::where(['email'=>$data['email']])->count();
-
-            if ($user_count == 0) {
-
-                return redirect()->back()->with('flash_message_error','Email Not Found!');
-                
-            } else {
-
-                $get_user = User::where(['email'=> $data['email']])->with('roles')->first();
-
-                $role_name = $get_user->roles->first()->name;
-                
-                if($role_name == "user"){
-
-                    $mail_data = array(
-                        'user_id'      =>  $get_user->id,
-                        'user_name'      =>  $get_user->name,
-                        'user_email'      =>  $get_user->email
-                    );
-                    // dd($data);
-
-                    Mail::to($get_user->email)->send(new UserForgotPasswrod($mail_data));
-
-                    return redirect()->back()->with('flash_message_success','Reset Password Link Send To Your Email. Check Your E-mail Account And Spam Also.');
-
-                }else{
-
-                    return redirect()->with('flash_message_error','User not have Rights to Access');
-                }
-
-            }
-            
-        }
-
-        return view('frontend.forgot-password-link');
-
+        return app(\App\Http\Controllers\Auth\WebPasswordResetController::class)
+            ->requestLink($request, 'user');
     }
 
-    public function forgot_reset_password(Request $request, $user_id, $slug){
-
-        if($request->isMethod('post')){
-
-            $data = $request->all();
-
-            if($request->confirmPassword != $request->newPassword){
-                //Confirm password and new password are same
-                  return redirect()->back()->with('flash_message_error',' New Password and Confirm Password are not same. ');
-            }else{
-
-                $pass = bcrypt($request->newPassword);
-                User::where(['id'=>$user_id])->update
-                ([
-                    'password'=>$pass
-                ]);
-
-                return redirect('/login')->with('flash_message_success','Password Reset Successfully.');  
-
-            }   
-
-        }   
-
-        return view('frontend.forgot-password')->with(compact('user_id', 'slug'));
-
+    public function forgot_reset_password(Request $request, $user_id, #[\SensitiveParameter] $slug){
+        return app(\App\Http\Controllers\Auth\WebPasswordResetController::class)
+            ->reset($request, (string) $user_id, (string) $slug, 'user');
     }
 
     public function dashboard(){
@@ -443,7 +361,8 @@ class UserController extends Controller
 
             $user_id = Auth::user()->id;
 
-            $user = User::where(['id'=>$user_id])->first();
+            $user = User::where(['id'=>$user_id])->firstOrFail();
+            app(\App\Services\CustomerEmailChangeService::class)->validateEmail($user, $request->input('email'));
             // image file delete start
             $image = $user->image;
 
@@ -477,14 +396,18 @@ class UserController extends Controller
                 $filename = $data['cur_image'];
             }
 
-            User::where(['id'=>$user_id])->update
-            ([
+            $emailChanged = app(\App\Services\CustomerEmailChangeService::class)->update((int) $user_id, [
                 'name'=>$data['name'],
                 'email'=>$data['email'],
                 'country_id'=>$data['country_id'],
                 'phone'=>$data['phone'],
                 'image'=>$filename,
             ]);
+
+            if ($emailChanged) {
+                Auth::logoutCurrentDevice();
+                return redirect('/login')->with('flash_message_success', 'Profile updated. Verify your new email address before signing in.');
+            }
 
             return redirect()->back()->with('flash_message_success','Profile Updated Successfully!');
 

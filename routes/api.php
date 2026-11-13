@@ -10,6 +10,41 @@ use App\Http\Controllers\Api\V1\ListingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
+    Route::prefix('customer')->name('customer.')->group(function () {
+        $controller = \App\Http\Controllers\Api\V1\CustomerController::class;
+        $protected = ['auth:sanctum', \App\Http\Middleware\EligibleMobileCustomer::class];
+        $readOnly = [\App\Http\Middleware\ReadOnlyCustomerSanctum::class, ...$protected];
+        $listings = \App\Http\Controllers\Api\V1\CustomerListingController::class;
+        Route::get('listings', [$listings, 'index'])->middleware($readOnly)->name('listings.index');
+        Route::get('listings/{id}', [$listings, 'show'])->whereNumber('id')->middleware($readOnly)->name('listings.show');
+        Route::middleware($protected)->group(function () use ($listings) {
+            Route::post('listings', [$listings, 'store'])->name('listings.store');
+            Route::put('listings/{id}', [$listings, 'update'])->whereNumber('id')->name('listings.update');
+            Route::delete('listings/{id}', [$listings, 'destroy'])->whereNumber('id')->name('listings.destroy');
+            Route::post('listings/{id}/image', [$listings, 'uploadImage'])->whereNumber('id')->name('listings.image.upload');
+            Route::delete('listings/{id}/image', [$listings, 'removeImage'])->whereNumber('id')->name('listings.image.remove');
+        });
+        Route::get('dashboard', [$controller, 'dashboard'])->middleware($readOnly)->name('dashboard');
+        Route::get('profile', [$controller, 'profile'])->middleware($readOnly)->name('profile.show');
+        Route::middleware($protected)->group(function () use ($controller) {
+            Route::put('profile', [$controller, 'updateProfile'])->name('profile.update');
+            Route::post('profile/avatar', [$controller, 'uploadAvatar'])->name('avatar.upload');
+            Route::delete('profile/avatar', [$controller, 'removeAvatar'])->name('avatar.remove');
+            Route::post('change-password', [$controller, 'changePassword'])->name('password.change');
+        });
+    });
+    Route::prefix('auth')->name('auth.')->group(function () {
+        $controller = \App\Http\Controllers\Api\V1\AuthController::class;
+        Route::post('register', [$controller, 'register'])->name('register');
+        Route::post('login', [$controller, 'login'])->name('login');
+        Route::post('forgot-password', [$controller, 'forgotPassword'])->name('forgot-password');
+        Route::post('reset-password', [$controller, 'resetPassword'])->name('reset-password');
+        Route::post('resend-verification', [$controller, 'resendVerification'])->name('resend-verification');
+        Route::middleware(['auth:sanctum', \App\Http\Middleware\EligibleMobileCustomer::class])->group(function () use ($controller) {
+            Route::get('me', [$controller, 'me'])->name('me');
+            Route::post('logout', [$controller, 'logout'])->name('logout');
+        });
+    });
     Route::get('health', HealthController::class)->name('health');
     Route::get('home', HomeController::class)->name('home');
     Route::get('categories', CategoryController::class)->name('categories');

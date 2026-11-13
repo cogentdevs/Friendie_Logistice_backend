@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Queries\Api\ReferenceDataQuery;
 use App\Support\Api\PublicData;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -12,10 +13,11 @@ final class CategoryController
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $input = PublicData::input($request, PublicData::paginationRules());
-        $page = DB::table('categories')->select('id', 'name', 'image')->where('isActive', 1)
-            ->orderBy('name')->orderBy('id')->paginate($input['per_page'] ?? 50, ['*'], 'page', $input['page'] ?? 1);
+        $input = ReferenceDataQuery::input($request);
+        $query = DB::table('categories')->select('id', 'name', 'image')->where('isActive', 1);
+        $items = ReferenceDataQuery::apply($query, 'name', $input['search'] ?? null)->get()
+            ->map(PublicData::category(...))->values()->all();
 
-        return ApiResponse::success('Categories retrieved successfully.', PublicData::page($page, PublicData::category(...)));
+        return ApiResponse::success('Categories retrieved successfully.', ['items' => $items]);
     }
 }

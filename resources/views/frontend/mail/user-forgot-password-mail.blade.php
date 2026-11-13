@@ -2,13 +2,8 @@ Dear, {{ $data['user_name'] }} <br><br>
 
 Click on the link given below and reset your password on <a href="https://friendielogistics.com">Friendie Logistics</a> account: <br><br>
 
-@if($data['user_id'] == 1)
-	<!-- <a href="http://localhost:8000/admin/reset-password/{{ $data['user_id'] }}-{{ bin2hex(random_bytes(10)) }}"><strong>Go To Link</strong></a> -->
-	<a href="https://friendielogistics.com/admin/reset-password/{{ $data['user_id'] }}-{{ bin2hex(random_bytes(10)) }}"><strong>Go To Link</strong></a>
-@else
-	<!-- <a href="http://localhost:8000/reset-password/{{ $data['user_id'] }}-{{ bin2hex(random_bytes(10)) }}"><strong>Go To Link</strong></a> -->
-	<a href="https://friendielogistics.com/reset-password/{{ $data['user_id'] }}-{{ bin2hex(random_bytes(10)) }}"><strong>Go To Link</strong></a>
-@endif
+<a href="{{ $data['reset_url'] }}"><strong>Go To Link</strong></a>
+<p>This link expires in {{ config('auth.passwords.users.expire', 60) }} minutes and can be used once.</p>
 	
 
 <p>Regards</p>

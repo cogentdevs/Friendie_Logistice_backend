@@ -160,7 +160,7 @@ class ApiFoundationTest extends TestCase
     {
         $routes = [];
         foreach (app('router')->getRoutes() as $route) {
-            if (! str_starts_with($route->uri(), 'api/')) {
+            if (! str_starts_with($route->uri(), 'api/') && $route->uri() !== 'resend-activation') {
                 $routes[] = [
                     'uri' => $route->uri(), 'methods' => $route->methods(),
                     'name' => $route->getName(), 'action' => $route->getActionName(),
@@ -170,6 +170,14 @@ class ApiFoundationTest extends TestCase
         }
         usort($routes, fn ($a, $b) => strcmp($a['uri'].implode(',', $a['methods']), $b['uri'].implode(',', $b['methods'])));
         $expected = json_decode(file_get_contents(base_path('tests/Fixtures/web-routes-before-api.json')), true);
+        // Approved Phase 3B addition: name the existing confirmation route for native signing.
+        foreach ($expected as &$existingRoute) {
+            if ($existingRoute['uri'] === 'activate-your-account/{user_id}-{slug}') {
+                $existingRoute['name'] = 'activation.confirm';
+            }
+        }
+        unset($existingRoute);
+        $this->assertSame('resend-activation', app('router')->getRoutes()->getByName('activation.resend')->uri());
         $this->assertSame($expected, $routes);
         $this->assertSame('web', config('auth.defaults.guard'));
         $this->assertSame(['driver' => 'session', 'provider' => 'users'], config('auth.guards.web'));
@@ -180,7 +188,15 @@ class ApiFoundationTest extends TestCase
         $this->assertContains(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, $webMiddleware);
         $apiRoutes = collect(app('router')->getRoutes())->filter(fn ($route) => str_starts_with($route->uri(), 'api/'));
         $this->assertSame([
+            'api/v1/auth/forgot-password', 'api/v1/auth/login', 'api/v1/auth/logout', 'api/v1/auth/me',
+            'api/v1/auth/register', 'api/v1/auth/resend-verification', 'api/v1/auth/reset-password',
             'api/v1/categories', 'api/v1/cities', 'api/v1/countries', 'api/v1/currencies',
+            'api/v1/customer/change-password', 'api/v1/customer/dashboard',
+            'api/v1/customer/listings', 'api/v1/customer/listings',
+            'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}',
+            'api/v1/customer/listings/{id}/image', 'api/v1/customer/listings/{id}/image',
+            'api/v1/customer/profile', 'api/v1/customer/profile',
+            'api/v1/customer/profile/avatar', 'api/v1/customer/profile/avatar',
             'api/v1/health', 'api/v1/home', 'api/v1/listings', 'api/v1/listings/{id}',
         ], $apiRoutes->map(fn ($route) => $route->uri())->sort()->values()->all());
     }

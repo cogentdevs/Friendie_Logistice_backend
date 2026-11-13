@@ -44,9 +44,8 @@
 					</div>
 					
 					<!-- Login Form -->
-					<form class="form-horizontal mt-3" method="post" action="{{ url('/activate-your-account/'.$user_id.'-'.$slug) }}">
+					<form class="form-horizontal mt-3" method="post" action="{{ $activation_url }}">
                         {{ csrf_field() }}
-                        <input type="hidden" name="user_id" value="{{ $user_id }}">
 						<button class="btn btn-primary w-100 login-btn" type="submit">Activate</button>									
 					</form>		
 					<!-- /Login Form -->

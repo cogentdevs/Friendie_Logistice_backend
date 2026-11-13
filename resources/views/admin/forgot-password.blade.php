@@ -51,7 +51,12 @@
                                     <strong>{!! session('flash_message_error') !!}</strong>
                                 </div>
                             @endif
-                            <form class="form-horizontal mt-3" method="post" id="loginform" action="{{ url('/reset-password/'.$user_id.'-'.$slug) }}">
+                            @if($errors->any())
+                                <div class="alert alert-danger" role="alert"><ul>
+                                    @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                                </ul></div>
+                            @endif
+                            <form class="form-horizontal mt-3" method="post" id="loginform" action="{{ url('/admin/reset-password/'.$user_id.'-'.$slug) }}">
                                 {{ csrf_field() }}
                                 <div class="login-content">
                                     <div class="login-contenthead text-center">

@@ -105,7 +105,8 @@ Route::match(['get', 'post'], '/login', [App\Http\Controllers\UserController::cl
 Route::match(['get', 'post'], '/forgot-password', [App\Http\Controllers\UserController::class, 'forgot_password_link']);
 Route::match(['get', 'post'], '/reset-password/{user_id}-{slug}', [App\Http\Controllers\UserController::class, 'forgot_reset_password']);
 
-Route::match(['get', 'post'], '/activate-your-account/{user_id}-{slug}', [App\Http\Controllers\UserController::class, 'activateYourAccount']);
+Route::match(['get', 'post'], '/activate-your-account/{user_id}-{slug}', [App\Http\Controllers\UserController::class, 'activateYourAccount'])->name('activation.confirm');
+Route::match(['get', 'post'], '/resend-activation', [App\Http\Controllers\Auth\EmailActivationController::class, 'resend'])->name('activation.resend');
 
 Route::group(['middleware' => ['role:user']], function () {
 

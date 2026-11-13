@@ -181,13 +181,13 @@ class PublicApiTest extends TestCase
         DB::table('categories')->insert(['name' => 'Hidden', 'isActive' => 0]);
         DB::table('cities')->insert(['name' => 'Hidden', 'country_id' => $this->country, 'isActive' => 0]);
         $this->get('/api/v1/categories')->assertOk()->assertJsonCount(1, 'data.items');
-        $this->get('/api/v1/countries?per_page=1')->assertOk()->assertJsonPath('data.pagination.total', 3)
+        $this->get('/api/v1/countries')->assertOk()->assertJsonCount(3, 'data.items')->assertJsonMissingPath('data.pagination')
             ->assertJsonPath('data.items.0.id', $this->country);
         $this->get('/api/v1/currencies')->assertOk()->assertJsonPath('data.items', [['code' => 'USD']])
-            ->assertJsonPath('data.pagination.total', 1);
+            ->assertJsonMissingPath('data.pagination');
         $this->get('/api/v1/cities?country_id='.$this->country.'&search=Alpha')->assertOk()
             ->assertJsonCount(1, 'data.items')->assertJsonPath('data.items.0.id', $this->city);
-        $this->get('/api/v1/cities?per_page=1')->assertOk()->assertJsonPath('data.pagination.total', 2);
+        $this->get('/api/v1/cities')->assertOk()->assertJsonCount(2, 'data.items')->assertJsonMissingPath('data.pagination');
     }
 
     public function test_inactive_category_and_missing_join_relationships_do_not_expose_listings(): void

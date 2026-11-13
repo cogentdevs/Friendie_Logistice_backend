@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Queries\Api\ReferenceDataQuery;
 use App\Support\Api\PublicData;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -12,8 +13,8 @@ final class CityController
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $input = PublicData::input($request, PublicData::paginationRules() + [
-            'country_id' => 'sometimes|integer|min:1|max:2147483647', 'search' => 'sometimes|string|min:1|max:100',
+        $input = ReferenceDataQuery::input($request, [
+            'country_id' => 'sometimes|integer|min:1|max:2147483647',
         ]);
         $query = DB::table('cities as city')->join('countries as country', 'country.id', '=', 'city.country_id')
             ->select('city.id', 'city.name', 'city.short_name', 'city.country_id')
@@ -21,12 +22,9 @@ final class CityController
         if (isset($input['country_id'])) {
             $query->where('city.country_id', $input['country_id']);
         }
-        if (isset($input['search'])) {
-            $query->whereRaw("city.name LIKE ? ESCAPE '!'", [PublicData::like($input['search'])]);
-        }
-        $page = $query->orderBy('city.name')->orderBy('city.id')
-            ->paginate($input['per_page'] ?? 50, ['*'], 'page', $input['page'] ?? 1);
+        $items = ReferenceDataQuery::apply($query, 'city.name', $input['search'] ?? null, 'city.id')->get()
+            ->map(PublicData::city(...))->values()->all();
 
-        return ApiResponse::success('Cities retrieved successfully.', PublicData::page($page, PublicData::city(...)));
+        return ApiResponse::success('Cities retrieved successfully.', ['items' => $items]);
     }
 }

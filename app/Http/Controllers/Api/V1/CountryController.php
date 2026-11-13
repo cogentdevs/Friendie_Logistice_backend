@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Queries\Api\ReferenceDataQuery;
 use App\Support\Api\PublicData;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -12,10 +13,11 @@ final class CountryController
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $input = PublicData::input($request, PublicData::paginationRules());
-        $page = DB::table('countries')->select('id', 'name', 'short_name', 'image')->where('isActive', 1)
-            ->orderBy('name')->orderBy('id')->paginate($input['per_page'] ?? 50, ['*'], 'page', $input['page'] ?? 1);
+        $input = ReferenceDataQuery::input($request);
+        $query = DB::table('countries')->select('id', 'name', 'short_name', 'image')->where('isActive', 1);
+        $items = ReferenceDataQuery::apply($query, 'name', $input['search'] ?? null)->get()
+            ->map(PublicData::country(...))->values()->all();
 
-        return ApiResponse::success('Countries retrieved successfully.', PublicData::page($page, PublicData::country(...)));
+        return ApiResponse::success('Countries retrieved successfully.', ['items' => $items]);
     }
 }
