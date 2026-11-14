@@ -95,7 +95,7 @@
 	                                                @endif   
 	                                                 On {{ $data->reached_on }}</span>
 									     	</div>
-									     	<p>{!! mb_strimwidth(html_entity_decode($data->description),0,150,'...') !!}</p>
+                                    <p>{{ \App\Support\ListingDescription::preview($data->description, 150) }}</p>
 									 	</td>
 								     	<td>
 								     		<span class="status-text">

@@ -14,6 +14,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         $controller = \App\Http\Controllers\Api\V1\CustomerController::class;
         $protected = ['auth:sanctum', \App\Http\Middleware\EligibleMobileCustomer::class];
         $readOnly = [\App\Http\Middleware\ReadOnlyCustomerSanctum::class, ...$protected];
+        $reviews = \App\Http\Controllers\Api\V1\CustomerReviewController::class;
+        Route::get('reviews/received', [$reviews, 'received'])->middleware($readOnly)->name('reviews.received');
+        Route::get('reviews/given', [$reviews, 'given'])->middleware($readOnly)->name('reviews.given');
+        Route::post('reviews', [$reviews, 'store'])->middleware($protected)->name('reviews.store');
+        $chat = \App\Http\Controllers\Api\V1\CustomerChatController::class;
+        Route::get('conversations', [$chat, 'index'])->middleware($readOnly)->name('conversations.index');
+        Route::get('conversations/{id}', [$chat, 'show'])->whereNumber('id')->middleware($readOnly)->name('conversations.show');
+        Route::get('conversations/{id}/messages', [$chat, 'messages'])->whereNumber('id')->middleware($readOnly)->name('conversations.messages');
+        Route::post('conversations', [$chat, 'store'])->middleware($protected)->name('conversations.store');
+        Route::post('conversations/{id}/messages', [$chat, 'send'])->whereNumber('id')->middleware($protected)->name('conversations.send');
+        Route::post('conversations/{id}/read', [$chat, 'read'])->whereNumber('id')->middleware($protected)->name('conversations.read');
         $listings = \App\Http\Controllers\Api\V1\CustomerListingController::class;
         Route::get('listings', [$listings, 'index'])->middleware($readOnly)->name('listings.index');
         Route::get('listings/{id}', [$listings, 'show'])->whereNumber('id')->middleware($readOnly)->name('listings.show');

@@ -27,8 +27,6 @@ class MobileAuthenticationTest extends TestCase
         config(['app.url' => 'https://auth.example.test']);
         Role::findOrCreate('user', 'web');
         Role::findOrCreate('admin', 'web');
-        // Only the test challenge verifier is replaced. Production still calls the CAPTCHA provider.
-        Validator::extend('captcha', fn ($attribute, $value) => $value === 'synthetic-valid-challenge');
     }
 
     private function customer(array $changes = [], array $roles = ['user']): User
@@ -47,8 +45,7 @@ class MobileAuthenticationTest extends TestCase
         $country = DB::table('countries')->insertGetId(['name' => 'Synthetic', 'short_name' => 'SY', 'isActive' => 1]);
 
         return array_replace(['name' => 'New Customer', 'email' => 'new@example.test', 'phone' => '+10000000001',
-            'country_id' => $country, 'password' => 'Password123!', 'password_confirmation' => 'Password123!',
-            'captcha_token' => 'synthetic-valid-challenge'], $changes);
+            'country_id' => $country, 'password' => 'Password123!', 'password_confirmation' => 'Password123!'], $changes);
     }
 
     private function bearer(string $token): array
@@ -67,6 +64,139 @@ class MobileAuthenticationTest extends TestCase
         $this->assertIsString($proof);
 
         return $proof;
+    }
+
+    public function test_mobile_reset_revokes_all_explicit_mobile_tokens_but_preserves_other_accounts_categories_and_sessions(): void
+    {
+        $user = $this->customer();
+        $other = $this->customer(['email' => 'other@example.test']);
+        $mobile = $user->createToken('mobile', ['mobile:account']);
+        $second = $user->createToken('tablet', ['mobile:account', 'reports:read']);
+        $expired = $user->createToken('old-device', ['mobile:account'], now()->subMinute());
+        $integration = $user->createToken('integration', ['reports:read']);
+        $misleadingName = $user->createToken('mobile', ['reports:read']);
+        $wildcard = $user->createToken('general-integration', ['*']);
+        $otherMobile = $other->createToken('mobile', ['mobile:account']);
+        $sessionKey = auth()->guard('web')->getName();
+        session()->put($sessionKey, $user->id);
+        DB::table('sessions')->insert(['id' => 'synthetic-reset-session', 'user_id' => $user->id,
+            'payload' => 'synthetic-session-payload', 'last_activity' => now()->timestamp]);
+        $sessions = DB::table('sessions')->get()->toJson();
+        $otherBefore = $other->fresh()->getAttributes();
+        $proof = $this->proof($user);
+        $this->getJson('/api/v1/auth/me', $this->bearer($mobile->plainTextToken))->assertOk();
+        $response = $this->postJson('/api/v1/auth/reset-password', ['user_id' => $user->id, 'token' => $proof,
+            'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!'])
+            ->assertOk()->assertJsonPath('success', true)->assertJsonPath('message', 'Password reset successfully.')
+            ->assertJsonMissingPath('data.token');
+        $this->assertInstanceOf(\stdClass::class, json_decode($response->getContent())->data);
+        $this->assertSame([], get_object_vars(json_decode($response->getContent())->data));
+        foreach ([$mobile, $second, $expired] as $token) {
+            $this->assertNull($token->accessToken->fresh());
+            $this->getJson('/api/v1/auth/me', $this->bearer($token->plainTextToken))->assertUnauthorized();
+        }
+        foreach ([$integration, $misleadingName, $wildcard, $otherMobile] as $token) $this->assertNotNull($token->accessToken->fresh());
+        $this->getJson('/api/v1/auth/me', $this->bearer($otherMobile->plainTextToken))->assertOk();
+        $this->assertSame($sessions, DB::table('sessions')->get()->toJson());
+        $this->assertSame($user->id, session()->get($sessionKey));
+        $this->assertSame($otherBefore, $other->fresh()->getAttributes());
+        $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
+        $this->assertFalse(Hash::check('Password123!', $user->fresh()->password));
+        $this->assertFalse(app(WebPasswordResetService::class)->valid((string) $user->id, 'user', $proof));
+        $this->assertSame(3, $user->tokens()->count()); // No reset-issued token; only unrelated categories remain.
+        $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => 'Password123!'])->assertUnauthorized();
+        $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => 'NewPassword123!'])->assertOk()
+            ->assertJsonPath('data.token_type', 'Bearer');
+        Mail::assertNothingSent();
+    }
+
+    public static function failedMobileResets(): array
+    {
+        return [['invalid'], ['expired'], ['consumed'], ['wrong_account'], ['wrong_role'], ['confirmation'], ['weak'], ['missing']];
+    }
+
+    #[DataProvider('failedMobileResets')]
+    public function test_unsuccessful_api_reset_preserves_hash_mobile_tokens_and_existing_proof_state(string $scenario): void
+    {
+        $user = $this->customer();
+        $mobile = $user->createToken('mobile', ['mobile:account']);
+        $proof = $this->proof($user);
+        $input = ['user_id' => $user->id, 'token' => $proof, 'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!'];
+        if ($scenario === 'invalid') $input['token'] = str_repeat('0', 64);
+        if ($scenario === 'expired') $this->travel(61)->minutes();
+        if ($scenario === 'consumed') {
+            $this->assertTrue(app(WebPasswordResetService::class)->reset((string) $user->id, 'user', $proof, 'PreviouslyReset123!'));
+        }
+        if ($scenario === 'wrong_account') {
+            $other = $this->customer(['email' => 'other@example.test']);
+            $input['user_id'] = $other->id;
+        }
+        if ($scenario === 'wrong_role') {
+            $admin = $this->customer(['email' => 'admin@example.test'], ['admin']);
+            $input['user_id'] = $admin->id; $input['token'] = $this->proof($admin, 'admin');
+        }
+        if ($scenario === 'confirmation') $input['password_confirmation'] = 'WrongConfirmation';
+        if ($scenario === 'weak') $input['password'] = $input['password_confirmation'] = 'short';
+        if ($scenario === 'missing') unset($input['token']);
+        $hash = $user->fresh()->password;
+        $tokens = DB::table('personal_access_tokens')->get()->toJson();
+        $proofs = DB::table('password_reset_tokens')->get()->toJson();
+        $this->postJson('/api/v1/auth/reset-password', $input)->assertUnprocessable();
+        $this->assertSame($hash, $user->fresh()->password);
+        $this->assertSame($tokens, DB::table('personal_access_tokens')->get()->toJson());
+        $this->assertSame($proofs, DB::table('password_reset_tokens')->get()->toJson());
+        $this->assertNotNull($mobile->accessToken->fresh());
+        Mail::assertNothingSent();
+    }
+
+    public function test_api_revocation_failure_rolls_back_password_proof_and_tokens_and_can_retry(): void
+    {
+        $user = $this->customer();
+        $mobile = $user->createToken('mobile', ['mobile:account']);
+        $proof = $this->proof($user);
+        $input = ['user_id' => $user->id, 'token' => $proof, 'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!'];
+        $hash = $user->fresh()->password;
+        $proofs = DB::table('password_reset_tokens')->get()->toJson();
+        $fail = true;
+        DB::connection()->beforeExecuting(function ($sql) use (&$fail) {
+            if ($fail && str_starts_with(strtolower($sql), 'delete from `personal_access_tokens`')) {
+                $fail = false; throw new \RuntimeException('synthetic-private-token-storage-failure');
+            }
+        });
+        $this->postJson('/api/v1/auth/reset-password', $input)->assertStatus(500)
+            ->assertExactJson(['success' => false, 'message' => 'Server error']);
+        $this->assertSame($hash, $user->fresh()->password);
+        $this->assertSame($proofs, DB::table('password_reset_tokens')->get()->toJson());
+        $this->assertNotNull($mobile->accessToken->fresh());
+        $this->assertTrue(app(WebPasswordResetService::class)->valid((string) $user->id, 'user', $proof));
+        $this->postJson('/api/v1/auth/reset-password', $input)->assertOk();
+        $this->assertNull($mobile->accessToken->fresh());
+    }
+
+    public function test_api_missing_token_storage_does_not_commit_reset_without_executing_ddl(): void
+    {
+        $user = $this->customer(); $proof = $this->proof($user);
+        $hash = $user->password; $proofs = DB::table('password_reset_tokens')->get()->toJson();
+        DB::connection()->beforeExecuting(function ($sql) {
+            if (str_starts_with(strtolower($sql), 'delete from `personal_access_tokens`')) {
+                throw new \PDOException('Synthetic missing token table');
+            }
+        });
+        $this->postJson('/api/v1/auth/reset-password', ['user_id' => $user->id, 'token' => $proof,
+            'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!'])->assertStatus(500);
+        $this->assertSame($hash, $user->fresh()->password);
+        $this->assertSame($proofs, DB::table('password_reset_tokens')->get()->toJson());
+    }
+
+    public function test_website_shared_reset_still_preserves_mobile_tokens_and_sessions(): void
+    {
+        $user = $this->customer(); $proof = $this->proof($user);
+        $mobile = $user->createToken('mobile', ['mobile:account']);
+        $sessionKey = auth()->guard('web')->getName(); session()->put($sessionKey, $user->id);
+        $this->assertTrue(app(WebPasswordResetService::class)->reset((string) $user->id, 'user', $proof, 'WebResetPassword123!'));
+        $this->assertNotNull($mobile->accessToken->fresh());
+        $this->assertSame($user->id, session()->get($sessionKey));
+        $this->getJson('/api/v1/auth/me', $this->bearer($mobile->plainTextToken))->assertOk();
     }
 
     public function test_registration_assigns_only_customer_role_and_requires_verification_without_tokens_or_session(): void
@@ -108,16 +238,16 @@ class MobileAuthenticationTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_registration_rate_limit_and_mail_failure_leave_an_unverified_recoverable_account(): void
+    public function test_registration_has_no_ip_attempt_limit_and_mail_failure_leaves_an_unverified_recoverable_account(): void
     {
         Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('synthetic transport failure'));
         $data = $this->registration();
         $this->postJson('/api/v1/auth/register', $data)->assertCreated();
         $this->assertSame(0, (int) User::where('email', $data['email'])->sole()->isVerified);
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 7; $i++) {
             $this->postJson('/api/v1/auth/register', $data)->assertCreated();
         }
-        $this->postJson('/api/v1/auth/register', $data)->assertStatus(429)->assertHeader('Retry-After');
+        $this->assertSame(1, User::where('email', $data['email'])->count());
     }
 
     public function test_login_token_is_hashed_scoped_expiring_and_profile_is_allowlisted(): void
@@ -309,5 +439,41 @@ class MobileAuthenticationTest extends TestCase
         }
         $this->assertSame(0, $composed);
         $this->assertSame($before, (array) DB::table('post_ads')->find($id));
+    }
+
+    public function test_mobile_registration_needs_no_captcha_and_never_invokes_its_validator_or_http(): void
+    {
+        Validator::extend('captcha', function () { throw new \LogicException('CAPTCHA must not run for mobile registration'); });
+        $data=$this->registration();
+        foreach(['captcha_token','recaptcha_token','g-recaptcha-response'] as $field)$this->assertArrayNotHasKey($field,$data);
+        $this->postJson('/api/v1/auth/register',$data)->assertCreated()
+            ->assertExactJson(['success'=>true,'message'=>AuthController::REGISTERED,'data'=>[]]);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        $this->assertSame(0,(int)User::where('email',$data['email'])->sole()->isVerified);
+    }
+
+    public function test_captcha_removal_preserves_all_non_captcha_required_fields(): void
+    {
+        $data=$this->registration();
+        foreach(['name','email','phone','country_id','password','password_confirmation'] as $field){
+            RateLimiter::clear('mobile-register-ip:'.hash('sha256','127.0.0.1'));
+            $input=$data;unset($input[$field]);
+            $response=$this->postJson('/api/v1/auth/register',$input)->assertUnprocessable();
+            $response->assertJsonValidationErrors($field);
+            foreach(['captcha_token','recaptcha_token','g-recaptcha-response'] as $captcha)$this->assertArrayNotHasKey($captcha,$response->json('errors'));
+        }
+        $this->assertFalse(User::where('email',$data['email'])->exists());
+        Mail::assertNothingSent();
+    }
+
+    public function test_mobile_duplicate_phone_is_neutral_and_website_captcha_rule_remains_present(): void
+    {
+        $data=$this->registration();
+        $first=$this->postJson('/api/v1/auth/register',$data)->assertCreated();
+        $data['email']='another@example.test';
+        $this->postJson('/api/v1/auth/register',$data)->assertCreated()->assertExactJson($first->json());
+        $this->assertFalse(User::where('email',$data['email'])->exists());
+        Mail::assertSentCount(1);
+        $this->assertStringContainsString("'g-recaptcha-response' => 'required|captcha'",file_get_contents(base_path('app/Http/Controllers/UserController.php')));
     }
 }

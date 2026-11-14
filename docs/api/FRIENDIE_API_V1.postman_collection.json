@@ -1,0 +1,1602 @@
+{
+  "info": {
+    "name": "Friendie Logistics API v1 — audited Phase 9",
+    "description": "37 verified routes. Isolated/synthetic testing only. Do NOT run this collection against the original database. Login is not deployable there until separately approved Sanctum table installation. No automatic token capture, mail trigger execution or test scripts. Listing DELETE is intentionally409. Dates/IDs/CAPTCHA/proofs/files must be replaced with synthetic isolated fixtures. Use base_url including /api/v1, no trailing slash. See FINAL_API_AUDIT_V1.md and FINAL_API_ROUTE_INVENTORY.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: None\nResponse: data.status, api_version\nExpected success: 200\nCommon statuses: 200; sanitized 500 may occur on infrastructure failures.\n\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Home",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/home",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "home"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: None\nResponse: data.categories, featured_listings, latest_listings\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\nLimits 12/8/8; published/nonexpired query; featured departure > today.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: search\nResponse: data.items: id,name,image_url; no pagination\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\nAll eligible matching records; literal case-insensitive search; exact, prefix, substring ranking.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Countries",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/countries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "countries"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: search\nResponse: data.items: id,name,short_name,image_url; no pagination\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\nAll eligible matching records; literal case-insensitive search; exact, prefix, substring ranking.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Cities",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cities"
+              ],
+              "query": [
+                {
+                  "key": "country_id",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: country_id, search\nResponse: data.items: id,country_id,name,short_name; no pagination\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\nAll eligible matching records; literal case-insensitive search; exact, prefix, substring ranking.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Currencies",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/currencies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "currencies"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: search\nResponse: data.items: code; no pagination\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\nAll eligible matching records; literal case-insensitive search; exact, prefix, substring ranking.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Public listings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/listings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "from_country_id",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "to_country_id",
+                  "value": "2",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "from_city_id",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "to_city_id",
+                  "value": "2",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "ad_type",
+                  "value": "Carring",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "weight",
+                  "value": "5",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "departure_on",
+                  "value": "2030-11-20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "sort",
+                  "value": "latest",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: search, category_id, from_country_id, to_country_id, from_city_id, to_city_id, ad_type, weight, departure_on, sort, page, per_page\nResponse: data.items + data.pagination; safe listing cards\nExpected success: 200\nCommon statuses: 200,422; sanitized 500 may occur on infrastructure failures.\n20 default / 50 maximum; sorts latest, oldest, departure; published, active category, departure >= today.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Public listing details",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/listings/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "listings",
+                "1"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: No body\nOptional query: None\nResponse: data: safe listing card + description\nExpected success: 200\nCommon statuses: 200,404,422; sanitized 500 may occur on infrastructure failures.\nSame public eligibility; no private areas, owner email/phone.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: name, email, phone, country_id, password, password_confirmation, captcha_token\nOptional query: None\nResponse: data:{}; neutral confirmation; no token\nExpected success: 201\nCommon statuses: 201,422,429; sanitized 500 may occur on infrastructure failures.\nAll fields required; CAPTCHA required; duplicate email/phone neutral; 5/IP/hour.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Synthetic Customer\",\n  \"email\": \"customer@example.test\",\n  \"phone\": \"+15550001001\",\n  \"country_id\": 1,\n  \"password\": \"SyntheticPass123!\",\n  \"password_confirmation\": \"SyntheticPass123!\",\n  \"captcha_token\": \"<fresh-valid-CAPTCHA-proof>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: email, password\nOptional query: None\nResponse: data.token,token_type,user{id,name,email}\nExpected success: 200\nCommon statuses: 200,401,422,429,500; sanitized 500 may occur on infrastructure failures.\nOnly eligible customer; 5/email/15min,20/IP/15min; token table absent on original DB.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.test\",\n  \"password\": \"SyntheticPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: email\nOptional query: None\nResponse: data:{}; neutral mail confirmation\nExpected success: 200\nCommon statuses: 200,422,429; sanitized 500 may occur on infrastructure failures.\n60-minute reset; hashed role/account/current-email proof; 60s cooldown.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset password",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: user_id, token, password, password_confirmation\nOptional query: None\nResponse: data:{}; no auto login\nExpected success: 200\nCommon statuses: 200,422,429; sanitized 500 may occur on infrastructure failures.\nID requires emailed proof; atomic single use; existing mobile tokens NOT revoked.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"token\": \"<64-lowercase-hex-proof-from-email>\",\n  \"password\": \"NewSyntheticPass123!\",\n  \"password_confirmation\": \"NewSyntheticPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend verification",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/resend-verification",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "description": "Authentication: Public\nRequest fields: email\nOptional query: None\nResponse: data:{}; neutral mail confirmation\nExpected success: 200\nCommon statuses: 200,422,429; sanitized 500 may occur on infrastructure failures.\nActive unverified customer only; 24h signed browser link; 60s cooldown; prior links not revoked.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Current account",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: None\nResponse: data.id,name,email\nExpected success: 200\nCommon statuses: 200,401,403; sanitized 500 may occur on infrastructure failures.\nStandard Sanctum writes token last_used_at; no arbitrary account selector.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: Empty body\nOptional query: None\nResponse: data:{}\nExpected success: 200\nCommon statuses: 200,401,403; sanitized 500 may occur on infrastructure failures.\nRevoke current token only; web sessions/other devices preserved.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer profile",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "dashboard"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: None\nResponse: data.listings{total,published,pending,expired},unread_messages,reviews_received\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\nStored-status counts, not computed public visibility.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Own profile",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "profile"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: None\nResponse: data.id,name,email,phone,country_id,country,image_url,is_verified,email_verified_at\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\nOwn email/phone only.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Update profile",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "profile"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: name\nOptional query: None\nResponse: data.profile,verification_required,reauthentication_required\nExpected success: 200\nCommon statuses: 200,401,403,422,429; sanitized 500 may occur on infrastructure failures.\nOptional supported fields name,email,phone,country_id; at least one. Email change clears verification/revokes all account tokens.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Synthetic Customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload avatar",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "profile",
+                "avatar"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: multipart File field: avatar\nOptional query: None\nResponse: data.image_url\nExpected success: 200\nCommon statuses: 200,401,403,422,429,500; sanitized 500 may occur on infrastructure failures.\nmultipart avatar (NOT image). JPEG/PNG/WebP <=2048KiB, dimensions <=2048 each; reencode; old files retained.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": [],
+                  "description": "Choose an isolated synthetic JPEG/PNG/WebP. <=2MiB, <=2048x2048."
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove avatar reference",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/profile/avatar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "profile",
+                "avatar"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: Empty body\nOptional query: None\nResponse: data.image_url\nExpected success: 200\nCommon statuses: 200,401,403,422,429; sanitized 500 may occur on infrastructure failures.\nDefault avatar.jpg; physical files retained.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "change-password"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: current_password, password, password_confirmation\nOptional query: None\nResponse: data.reauthentication_required:true\nExpected success: 200\nCommon statuses: 200,401,403,422,429; sanitized 500 may occur on infrastructure failures.\nVerify current password; revoke ALL personal tokens and outstanding reset proof; web sessions preserved.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"SyntheticPass123!\",\n  \"password\": \"ChangedSyntheticPass123!\",\n  \"password_confirmation\": \"ChangedSyntheticPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer listings",
+      "item": [
+        {
+          "name": "My listings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "par",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "status",
+                  "value": "0",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "ad_type",
+                  "value": "Carring",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "sort",
+                  "value": "latest",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: search, status, ad_type, sort, page, per_page\nResponse: data.items + data.pagination; owner fields\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\nAll own stored statuses;20/50; no public joins.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Create listing",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: ad_type, title, description, category_id, from_country_id, from_city_id, to_country_id, to_city_id, currency, departure_on, reached_on, weight, weight_price\nOptional query: None\nResponse: data: owner listing incl status,image_url\nExpected success: 201\nCommon statuses: 201,401,403,422,429; sanitized 500 may occur on infrastructure failures.\nRequired type/title/category/route IDs/currency/dates; optional description,areas,weight,weight_price,show_contact_info(0 only). Carring/Send. Pending=0; owner derived.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad_type\": \"Carring\",\n  \"title\": \"Synthetic parcel capacity\",\n  \"description\": \"Room for a parcel.\",\n  \"category_id\": 1,\n  \"from_country_id\": 1,\n  \"from_city_id\": 1,\n  \"to_country_id\": 2,\n  \"to_city_id\": 2,\n  \"currency\": \"USD\",\n  \"departure_on\": \"2030-11-20\",\n  \"reached_on\": \"2030-11-21\",\n  \"weight\": 5,\n  \"weight_price\": 20.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Own listing details",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings",
+                "1"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: None\nResponse: data: owner editable listing\nExpected success: 200\nCommon statuses: 200,401,403,404,422; sanitized 500 may occur on infrastructure failures.\nPending/expired visible to owner; no GET writes.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Update own listing",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings",
+                "1"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: title\nOptional query: None\nResponse: data: updated owner listing\nExpected success: 200\nCommon statuses: 200,401,403,404,409,422,429; sanitized 500 may occur on infrastructure failures.\nEditable partial fields; preserve status/owner/featured; no reapproval/republish.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated synthetic parcel\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "BLOCKED listing deletion",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings",
+                "1"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: Empty body\nOptional query: None\nResponse: success:false; deletion unavailable\nExpected success: NONE: intentionally blocked; expected 409 for owned listing\nCommon statuses: 409,401,403,404,422,429; sanitized 500 may occur on infrastructure failures.\nIntentionally BLOCKED: owned listing always409. No deletion/archive/schema approval.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload listing image",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings/1/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings",
+                "1",
+                "image"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: multipart File field: image\nOptional query: None\nResponse: data.image_url\nExpected success: 200\nCommon statuses: 200,401,403,404,409,422,429,500; sanitized 500 may occur on infrastructure failures.\nmultipart image, safe JPEG/PNG/WebP <=2048KiB <=2048x2048; single image; old files retained.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Choose an isolated synthetic JPEG/PNG/WebP. <=2MiB, <=2048x2048."
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove listing image reference",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/listings/1/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "listings",
+                "1",
+                "image"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: Empty body\nOptional query: None\nResponse: data.image_url\nExpected success: 200\nCommon statuses: 200,401,403,404,409,422,429; sanitized 500 may occur on infrastructure failures.\nReset listing.png reference; preserve status/files.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer chat",
+      "item": [
+        {
+          "name": "Conversations",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: page, per_page\nResponse: data.items + data.pagination; metadata,last_message,last_message_at,unread_count\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\n20/50; latest valid message ID then room ID descending; batched aggregates.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Conversation details",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations",
+                "1"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: None\nResponse: data.id,listing{id,title},other_participant{id,display_name},created_at\nExpected success: 200\nCommon statuses: 200,401,403,404,422; sanitized 500 may occur on infrastructure failures.\nRoom membership + owner relation verified; no acceptance/contact access.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Message history",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations/1/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations",
+                "1",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: page, per_page\nResponse: data.items + data.pagination; id,conversation_id,sender{id,display_name},message,created_at,message_on,is_read\nExpected success: 200\nCommon statuses: 200,401,403,404,422; sanitized 500 may occur on infrastructure failures.\nOldest persisted ID first;20/50; no GET read mutation.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Create or reuse conversation",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: post_ads_id, message\nOptional query: None\nResponse: data: conversation metadata\nExpected success: 201, 200\nCommon statuses: 201,200,401,403,404,422,429; sanitized 500 may occur on infrastructure failures.\nNew: public future listing, eligible owner, not self; existing pair earliest reuse with NO duplicate first message. No email. Global web uniqueness not guaranteed.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_ads_id\": 1,\n  \"message\": \"Hello about this listing.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send message",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations/1/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: message\nOptional query: None\nResponse: data: message object\nExpected success: 201\nCommon statuses: 201,401,403,404,422,429; sanitized 500 may occur on infrastructure failures.\nOnly message accepted; max10000 chars/65535bytes; no NUL/empty; IDs derived; no attachments/mail.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Thank you for the details.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark incoming messages read",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/conversations/1/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "conversations",
+                "1",
+                "read"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: Empty body\nOptional query: None\nResponse: data.conversation_id,marked_read,unread_count\nExpected success: 200\nCommon statuses: 200,401,403,404,422,429; sanitized 500 may occur on infrastructure failures.\nOnly incoming NULL read_by -> caller ID string. Existing values preserved; idempotent.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer reviews",
+      "item": [
+        {
+          "name": "Received reviews",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/reviews/received",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "reviews",
+                "received"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: page, per_page\nResponse: data.items + data.pagination; id,listing,reviewer,reviewed_customer,rating,review,date_time,created_at,updated_at\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\nto_user_id=current; newest ID first;20/50.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Given reviews",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/reviews/given",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "reviews",
+                "given"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "Optional; enable only supported values. See route inventory."
+                }
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: No body\nOptional query: page, per_page\nResponse: data.items + data.pagination; same review object\nExpected success: 200\nCommon statuses: 200,401,403,422; sanitized 500 may occur on infrastructure failures.\nfrom_user_id=current; newest ID first;20/50.\nOnly synthetic isolated environment. No original-database requests were executed."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit review",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/reviews",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "customer",
+                "reviews"
+              ]
+            },
+            "description": "Authentication: Bearer customer_token; active, verified, exclusively customer, mobile:account\nRequest fields: post_ads_id, rating, review\nOptional query: None\nResponse: data: created review object\nExpected success: 201\nCommon statuses: 201,401,403,404,409,422,429; sanitized 500 may occur on infrastructure failures.\nrating0..5, required text; target listing owner; no self; duplicate reviewer/listing409. No public eligibility check: see high finding R03.\nOnly synthetic isolated environment. No original-database requests were executed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_ads_id\": 1,\n  \"rating\": 4,\n  \"review\": \"Helpful communication.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+

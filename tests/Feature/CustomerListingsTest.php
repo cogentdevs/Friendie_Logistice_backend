@@ -326,4 +326,85 @@ class CustomerListingsTest extends TestCase
         $this->postJson('/api/v1/customer/listings',$this->fields(),$this->headers())->assertStatus(429)->assertHeader('Retry-After');
         $this->assertSame(0,$composed);Mail::assertNothingSent();
     }
+
+    public function test_description_policy_preserves_approved_formatting_and_rejects_active_content(): void
+    {
+        $safe='<p>Unicode ???? &amp; text<br /><strong>B</strong><b>B</b><em>I</em><i>I</i><u>U</u><s>S</s></p><h2>H</h2><h3>H</h3><blockquote>Quote</blockquote><ul><li>A</li></ul><ol><li>B</li></ol><a href="https://example.test/path">HTTPS</a><a href="http://example.test">HTTP</a>';
+        $html=\App\Support\ListingDescription::html($safe);
+        foreach(['p','br','strong','b','em','i','u','s','h2','h3','blockquote','ul','ol','li','a'] as $tag)$this->assertStringContainsString('<'.$tag,$html);
+        $this->assertStringContainsString('????',$html);
+        $this->assertStringContainsString('href="https://example.test/path"',$html);
+        $this->assertStringContainsString('href="http://example.test"',$html);
+        $this->assertSame($html,\App\Support\ListingDescription::html($html));
+        $this->assertNull(\App\Support\ListingDescription::html(null));
+        $this->assertSame('',\App\Support\ListingDescription::html(''));
+        foreach(['javascript:alert(1)','data:text/html,x','vbscript:x','file:///x','mailto:x@example.test','tel:123','/relative','//example.test/x','#anchor'] as $url){
+            $result=\App\Support\ListingDescription::html('<a href="'.$url.'">label</a>');
+            $this->assertStringNotContainsString('href=',$result);
+        }
+        foreach(['<script>alert(1)</script>','<p onclick="alert(1)" style="background:url(javascript:x)" class="x" id="x">text</p>',
+            '<svg onload="alert(1)"><circle /></svg><math><mi>x</mi></math>','<iframe srcdoc="x"></iframe><object>x</object><embed src="x"><img src="x" onerror="x">',
+            '<form><input><button>x</button></form><table><tr><td>x</td></tr></table>',
+            '<a href="jav&#x61;script:alert(1)" onmouseover="x">x</a>','<p><b>broken</p></b>'] as $payload){
+            $clean=\App\Support\ListingDescription::html($payload);
+            $this->assertDoesNotMatchRegularExpression('/<(script|svg|math|iframe|object|embed|img|form|input|button|table)\b|\s(on\w+|style|class|id)=|javascript:/i',$clean);
+            $this->assertSame($clean,\App\Support\ListingDescription::html($clean));
+        }
+        foreach(['&lt;script&gt;alert(1)&lt;/script&gt;','&amp;lt;script&amp;gt;x&amp;lt;/script&amp;gt;'] as $encoded){
+            $clean=\App\Support\ListingDescription::html($encoded);
+            $this->assertStringNotContainsString('<script',$clean);
+            $this->assertSame($clean,\App\Support\ListingDescription::html($clean));
+        }
+    }
+
+    public function test_api_description_sanitization_preserves_partial_null_and_empty_contracts(): void
+    {
+        $result=$this->postJson('/api/v1/customer/listings',$this->fields(['description'=>'<p onclick="x">Safe<script>x</script></p>']),$this->headers())->assertCreated();
+        $id=$result->json('data.id');
+        $this->assertSame('<p>Safe</p>',DB::table('post_ads')->where('id',$id)->value('description'));
+        $result->assertJsonPath('data.description','<p>Safe</p>')->assertJsonPath('data.status',0);
+        $this->putJson('/api/v1/customer/listings/'.$id,['title'=>'changed'],$this->headers())->assertOk()->assertJsonPath('data.description','<p>Safe</p>');
+        $this->putJson('/api/v1/customer/listings/'.$id,['description'=>'<h2>Good</h2><iframe>x</iframe>'],$this->headers())->assertOk()->assertJsonPath('data.description','<h2>Good</h2>x');
+        foreach([null,''] as $value)$this->putJson('/api/v1/customer/listings/'.$id,['description'=>$value],$this->headers())->assertOk()->assertJsonPath('data.description',null);
+    }
+
+    public function test_customer_create_customer_edit_and_admin_edit_keep_existing_redirects_and_fields(): void
+    {
+        $this->actingAs($this->customer,'web');
+        $controller=new \App\Http\Controllers\PostAdsController();
+        $fields=$this->fields(['description'=>'<p>Safe<script>x</script></p>'])+['show_contact_info'=>0];
+        $request=\Illuminate\Http\Request::create('/user/add-listing','POST',$fields);
+        $response=$controller->addPostAds($request);
+        $this->assertStringEndsWith('/user/my-listing',$response->getTargetUrl());
+        $row=DB::table('post_ads')->where('created_by',$this->customer->id)->orderByDesc('id')->first();
+        $this->assertSame('<p>Safe</p>',$row->description);$this->assertSame(0,(int)$row->isActive);$this->assertSame('listing.png',$row->image);
+        $this->other->syncRoles(['admin']);
+        foreach([$this->customer,$this->other] as $actor){
+            $this->actingAs($actor,'web');
+            $input=$fields+['cur_image'=>'listing.png','isActive'=>1];$input['description']='<h3>Edited</h3><img src="x">';
+            $reply=$controller->editPostAds(\Illuminate\Http\Request::create('/user/edit-listing/'.$row->id,'POST',$input),$row->id);
+            $this->assertStringEndsWith((int)$actor->id === 1 ? '/admin/view-listing' : '/user/my-listing', $reply->getTargetUrl());
+            $updated=DB::table('post_ads')->where('id',$row->id)->first();
+            $this->assertSame('<h3>Edited</h3>',$updated->description);$this->assertSame(1,(int)$updated->isActive);
+            $this->assertSame($row->image,$updated->image);$this->assertSame($row->created_by,$updated->created_by);
+        }
+    }
+
+    public function test_actual_description_sink_expressions_are_safe_and_preview_limits_preserved(): void
+    {
+        $listing=(object)['description'=>'<p>Historical<script>alert(1)</script><img src=x onerror=x></p>&lt;script&gt;text&lt;/script&gt;'];
+        foreach(['resources/views/frontend/listing-details.blade.php','resources/views/frontend/user/my-listing.blade.php','resources/views/admin/listing/view_listing.blade.php'] as $path){
+            $source=file_get_contents(base_path($path));
+            preg_match('/^.*ListingDescription::.*$/m',$source,$match);$this->assertNotEmpty($match);
+            $this->assertStringNotContainsString('html_entity_decode',$match[0]);
+            $rendered=\Illuminate\Support\Facades\Blade::render($match[0],['listing'=>$listing,'data'=>$listing]);
+            $this->assertStringNotContainsString('<script',$rendered);$this->assertStringNotContainsString('<img',$rendered);
+            $this->assertStringContainsString('Historical',$rendered);
+        }
+        foreach([100,150] as $width){
+            $text=\App\Support\ListingDescription::preview('<p>'.str_repeat('x',200).'</p>', $width);
+            $this->assertSame($width,mb_strwidth($text));$this->assertStringEndsWith('...',$text);
+        }
+        $this->assertSame('one two three',\App\Support\ListingDescription::preview('<p>one</p><p>two<br>three</p>',150));
+    }
 }

@@ -37,8 +37,7 @@ Extra fields on auth submissions that accept input are rejected with 422, includ
   "phone": "+10000000001",
   "country_id": 1,
   "password": "ExamplePassword123!",
-  "password_confirmation": "ExamplePassword123!",
-  "captcha_token": "<fresh-provider-challenge-response>"
+  "password_confirmation": "ExamplePassword123!"
 }
 ```
 
@@ -52,7 +51,7 @@ HTTP 201 returns the same neutral message and empty object for newly created or 
 {"success":true,"message":"If registration is available for these details, a verification email will be sent. Please check your inbox and spam folder.","data":{}}
 ```
 
-Duplicate details deliberately do not return an enumerable uniqueness error. Abuse protection: five requests per IP/hour plus the existing server-verified CAPTCHA. The API does **not** bypass or disable web CAPTCHA. Bare React Native must supply a valid response obtained through a compatible hosted challenge flow; a native attestation replacement requires a separately approved design. A four-field registration request is insufficient. Never ship a fixed or test CAPTCHA bypass.
+Duplicate details deliberately do not return an enumerable uniqueness error. The mobile registration-specific IP attempt limit has been removed by owner request. Strict input validation, duplicate-account checks, password hashing and mandatory email verification remain. Mobile registration does not require or verify CAPTCHA and makes no external CAPTCHA verification call. Omit `captcha_token`, `recaptcha_token` and `g-recaptcha-response`; unsupported fields remain rejected by the existing input allowlist. Website registration CAPTCHA is unchanged. Without registration CAPTCHA or an application-level registration attempt limit, automated signup/mail-abuse risk increases. No new throttle or attestation is introduced. All six non-CAPTCHA fields above remain required.
 
 ### POST /api/v1/auth/login
 
@@ -96,7 +95,15 @@ Uses the shared customer-scoped hashed reset repository, current email binding, 
 This contract derives from the existing browser link `/reset-password/{user_id}-{token}`. Only a user who possesses the emailed proof can submit it; ID alone never authorizes reset. A future native reset screen would need an approved link-handling flow. Do not expose/obtain tokens from another API or change the browser security model.
 
 Success HTTP 200: `{"success":true,"message":"Password reset successfully.","data":{}}`.
-Well-formed but invalid/expired/replayed/cross-account/cross-role proof: HTTP 422, `{"success":false,"message":"Invalid or expired reset link."}`. Malformed proof and password validation return standard field errors. Account row and token consumption are serialized in the existing service, preventing concurrent reuse. Does not change statuses, roles, website sessions or other-device tokens; does not log in or issue a token. Existing access tokens are not revoked by a reset under the currently approved policy.
+Well-formed but invalid/expired/replayed/cross-account/cross-role proof: HTTP 422, `{"success":false,"message":"Invalid or expired reset link."}`. Malformed proof and password validation return standard field errors. Account row and token consumption are serialized in the existing service, preventing concurrent reuse. Does not change statuses, roles or website sessions; does not log in or issue a token.
+
+**Phase 10B — API-only mobile token revocation:** successful POST `/api/v1/auth/reset-password` now revokes every token belonging to that customer whose stored abilities explicitly contain `mobile:account`, including other devices and expired mobile tokens. This is the ability issued by existing mobile login; device/token name is not the classifier. Mixed-ability tokens explicitly containing this mobile ability are included. Another customer's tokens and unrelated token categories are preserved. General-purpose `['*']` tokens without the explicit mobile ability are not issued by this mobile login flow and remain unchanged; Sanctum can allow such wildcard credentials to access mobile APIs, so this patch is not a blanket revocation of every potentially mobile-capable integration credential. Changing that separate token-category policy requires approval.
+
+Password update, original proof consumption and mobile token deletion share an API-specific outer transaction on the current database. The shared reset service retains its existing account lock until that outer transaction commits, serializing with mobile login. A revocation query/storage failure (including missing token infrastructure) returns sanitized 500 and rolls back password/proof changes; no successful reset is reported. Invalid, expired, consumed, wrong-account/role proofs and validation failures do not revoke tokens. Existing proof validation, expiry, hashing, password policy and rate limits are unchanged.
+
+Previously issued matching mobile tokens receive 401 afterward. Customer must explicitly log in with the new password; reset returns the same 200 success envelope with empty `data` object and no new token. Website sessions and stored session records remain intact. Website/browser password reset continues calling the unchanged shared reset service and **does not acquire this API-only revocation behavior**; browser recovery therefore retains its prior token policy. The original database still lacks the token table and was not changed: valid API resets must fail atomically until the separately approved infrastructure is installed. No migration was executed.
+
+Phase 10B verification (14 November 2026): 12 focused tests / 106 assertions passed; complete MobileAuthenticationTest passed 47 / 328; combined safe API/security regression suite passed 367 / 3,055 with zero failures and one existing PHP 8.4 vendor deprecation. Tests cover multi-device/expired explicit-mobile revocation, old-token401, old-password rejection/new-password login, other customer/category/wildcard/session preservation, invalid/expired/consumed/wrong-account/role/validation failures, atomic rollback on token deletion failure and simulated missing storage, retry after rollback, and unchanged shared website reset token behavior. No DDL, real email or original-data mutation occurred. Before/after original25-table fingerprint,43 media hashes and1,991 protected file checksums matched. Only API AuthController, its existing feature test and this reset documentation section changed; no commit/push/deploy or next phase.
 
 Shared web/API limits: ten submits/IP/15 minutes, five/customer ID/15 minutes. Password policy matches registration and the secure web reset policy.
 

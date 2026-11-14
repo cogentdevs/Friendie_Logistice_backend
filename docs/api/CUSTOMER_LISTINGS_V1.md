@@ -203,3 +203,14 @@ The isolated focused/regression run passed **284 tests and 2,495 assertions**, i
 Read-only before/after checks matched all 25 original database table fingerprints. All 43 baseline media hashes matched. A separate checksum of 1,975 pre-existing files, including the Git index, environment files and prior uncommitted work, matched after excluding the two deliberately extended route/inventory files. These checks establish integrity for this task; they do not establish that the current cache table equals an older backup snapshot.
 
 Phase 6 remains **PARTIAL**: six operations are functional; listing DELETE is deliberately fail-closed with HTTP 409 until retention and concurrency-safe deletion are separately approved. Changes remain unstaged/uncommitted; no original-database migration or expiry command was run.
+
+
+## Listing-description security (Phase 10C-2)
+
+New API descriptions are purified after existing validation and before storage using the installed HTMLPurifier. Omitted descriptions remain untouched; null and existing empty-input normalization are preserved. Request fields, envelopes, ownership, status, routes and image handling are unchanged.
+
+Allowed HTML: `p,br,strong,b,em,i,u,s,blockquote,h2,h3,ul,ol,li,a[href]`. Links require absolute HTTP/HTTPS URLs with a host and no user credentials. Relative/protocol-relative links, other schemes, scripts, events, styles, classes/IDs, images, SVG, embedded media, tables and forms are excluded. Harmless text from removed elements may remain.
+
+The same focused helper protects website/customer/admin description writes and the full-detail final HTML output. No entity decoding occurs after purified HTML output. Customer/admin previews are purified, converted to text, truncated to the existing 150/100 display widths, then Blade-escaped. Historical records are not rewritten; final-output purification protects them. Encoded tags remain literal text.
+
+TinyMCE configuration is unchanged and still offers unsupported features that the server removes. This is intentional policy filtering, not complete editor feature compatibility. Definition caching is disabled to avoid vendor-directory writes and cross-environment cache files, at a processing-cost trade-off. No dependency was added. Original content in other contexts must still be treated as untrusted; unrelated website vulnerabilities are outside this patch. Browser visual and production load testing are not established by feature tests.

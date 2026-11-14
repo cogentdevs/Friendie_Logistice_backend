@@ -82,14 +82,11 @@ final class AuthController
 
     public function register(Request $request): JsonResponse
     {
-        $this->limit('mobile-register-ip:'.hash('sha256', (string) $request->ip()), 5, 3600);
         $data = $this->input($request, [
             'name' => 'required|string|max:255', 'email' => 'required|string|email|max:255',
             'phone' => 'required|string|max:255',
             'country_id' => ['required', 'integer', 'min:1', Rule::exists('countries', 'id')->where('isActive', 1)],
             'password' => $this->passwords(), 'password_confirmation' => 'required|string',
-            // Keep the existing server-verified challenge; native attestation is not yet approved.
-            'captcha_token' => 'required|string|captcha',
         ]);
         $data['email'] = EmailActivationService::normalizeEmail($data['email']);
         $id = null;
@@ -191,7 +188,17 @@ final class AuthController
             'password' => $this->passwords(), 'password_confirmation' => 'required|string',
         ]);
         $this->limit('web-reset-submit-account:'.hash('sha256', 'user:'.$data['user_id']), 5, 900);
-        if (! $this->resets->reset((string) $data['user_id'], 'user', $data['token'], $data['password'])) {
+        $reset = DB::transaction(function () use ($data) {
+            if (! $this->resets->reset((string) $data['user_id'], 'user', $data['token'], $data['password'])) {
+                return false;
+            }
+            // The shared reset retains its account lock until this outer transaction commits.
+            // Classify by the explicit ability issued by mobile login, never by device name or '*'.
+            User::findOrFail($data['user_id'])->tokens()->whereJsonContains('abilities', 'mobile:account')->delete();
+
+            return true;
+        });
+        if (! $reset) {
             return ApiResponse::error('Invalid or expired reset link.', 422);
         }
 

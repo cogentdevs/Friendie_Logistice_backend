@@ -152,7 +152,7 @@ class PostAdsController extends Controller
             $post_ads->ad_type = $data['ad_type'];
             $post_ads->title = $data['title'];
             $post_ads->image = $filename;
-            $post_ads->description = $data['description'];
+            $post_ads->description = \App\Support\ListingDescription::html($data['description']);
             $post_ads->weight = $data['weight'];
             $post_ads->weight_price = $data['weight_price'];
             $post_ads->currency = $data['currency'];
@@ -228,7 +228,7 @@ class PostAdsController extends Controller
                 'ad_type'=>$data['ad_type'],
                 'title'=>$data['title'],
                 'image'=>$filename,
-                'description'=>$data['description'],
+                'description'=>\App\Support\ListingDescription::html($data['description']),
                 'weight'=>$data['weight'],
                 'weight_price'=>$data['weight_price'],
                 'currency'=>$data['currency'],

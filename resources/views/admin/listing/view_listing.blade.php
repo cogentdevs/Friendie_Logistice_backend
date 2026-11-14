@@ -71,7 +71,7 @@
                                                 @endif
                                                 On {{ $data->reached_on }}</span>
                                         </div>
-                                        <p>{!! mb_strimwidth(html_entity_decode($data->description),0,100,'...') !!}</p>
+                                        <p>{{ \App\Support\ListingDescription::preview($data->description, 100) }}</p>
                                     </td>
                                     <td>
                                         @if($data->show_contact_info == 1)

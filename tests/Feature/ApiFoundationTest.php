@@ -191,12 +191,17 @@ class ApiFoundationTest extends TestCase
             'api/v1/auth/forgot-password', 'api/v1/auth/login', 'api/v1/auth/logout', 'api/v1/auth/me',
             'api/v1/auth/register', 'api/v1/auth/resend-verification', 'api/v1/auth/reset-password',
             'api/v1/categories', 'api/v1/cities', 'api/v1/countries', 'api/v1/currencies',
-            'api/v1/customer/change-password', 'api/v1/customer/dashboard',
+            'api/v1/customer/change-password',
+            'api/v1/customer/conversations', 'api/v1/customer/conversations',
+            'api/v1/customer/conversations/{id}',
+            'api/v1/customer/conversations/{id}/messages', 'api/v1/customer/conversations/{id}/messages',
+            'api/v1/customer/conversations/{id}/read', 'api/v1/customer/dashboard',
             'api/v1/customer/listings', 'api/v1/customer/listings',
             'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}',
             'api/v1/customer/listings/{id}/image', 'api/v1/customer/listings/{id}/image',
             'api/v1/customer/profile', 'api/v1/customer/profile',
             'api/v1/customer/profile/avatar', 'api/v1/customer/profile/avatar',
+            'api/v1/customer/reviews', 'api/v1/customer/reviews/given', 'api/v1/customer/reviews/received',
             'api/v1/health', 'api/v1/home', 'api/v1/listings', 'api/v1/listings/{id}',
         ], $apiRoutes->map(fn ($route) => $route->uri())->sort()->values()->all());
     }

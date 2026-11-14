@@ -159,7 +159,7 @@
                         <h4>Description</h4>
                     </div>
                     <div class="card-body">
-                        <p>{!! html_entity_decode($listing->description) !!}</p>
+                        <div>{!! \App\Support\ListingDescription::html($listing->description) !!}</div>
                     </div>
                 </div>           
                     

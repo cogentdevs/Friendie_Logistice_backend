@@ -124,6 +124,7 @@ final class CustomerListingController
         $listing = DB::transaction(function () use ($request,$input) {
             $this->lockCustomer($request);
             $data = CustomerListingFields::validate($input);
+            if (array_key_exists('description', $data)) $data['description'] = \App\Support\ListingDescription::html($data['description']);
             $id = DB::table('post_ads')->insertGetId($data + ['created_by'=>$request->user()->id, 'isActive'=>0,
                 'isFeatured'=>0,'show_contact_info'=>0,'image'=>'listing.png','created_at'=>now(),'updated_at'=>now()]);
 
@@ -142,6 +143,7 @@ final class CustomerListingController
         $listing = DB::transaction(function () use ($request,$id,$input) {
             $this->lockCustomer($request);$listing = $this->owned($request,$id,true);$this->editable($listing);
             $data = CustomerListingFields::validate($input,$listing);
+            if (array_key_exists('description', $data)) $data['description'] = \App\Support\ListingDescription::html($data['description']);
             DB::table('post_ads')->where('id',$listing->id)->where('created_by',$request->user()->id)
                 ->update($data + ['updated_at'=>now()]);
 
