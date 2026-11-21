@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 final class CustomerListingFields
 {
     public const EDITABLE = ['ad_type', 'title', 'description', 'category_id', 'from_country_id', 'from_city_id',
-        'from_area', 'to_country_id', 'to_city_id', 'to_area', 'weight', 'weight_price', 'currency',
+        'from_area', 'from_address', 'to_address', 'to_country_id', 'to_city_id', 'to_area', 'weight', 'weight_price', 'currency',
         'departure_on', 'reached_on', 'show_contact_info'];
 
     public static function validate(array $input, ?object $current = null): array
@@ -32,6 +32,7 @@ final class CustomerListingFields
             'title' => $required.'|string|max:255', 'description' => 'sometimes|nullable|string|max:10000',
             'category_id' => [...$presence, 'integer', 'min:1', 'max:2147483647', Rule::exists('categories', 'id')->where('isActive', 1)],
             'from_area' => 'sometimes|nullable|string|max:255', 'to_area' => 'sometimes|nullable|string|max:255',
+            'from_address' => 'sometimes|nullable|string|max:255', 'to_address' => 'sometimes|nullable|string|max:255',
             'weight' => 'sometimes|nullable|integer|min:0|max:2147483647',
             'weight_price' => ['sometimes', 'nullable', 'numeric', 'min:0', function ($attribute, $value, $fail) {
                 if (is_numeric($value) && ! is_finite((float) $value)) $fail('The price must be finite.');

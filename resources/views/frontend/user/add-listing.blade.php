@@ -97,6 +97,8 @@
 	                    			<div class="form-group">
 									    <label class="col-form-label">Area</label>
 										<input type="text" class="form-control pass-input" name="from_area" placeholder="Area">
+                                        <label>From Address</label>
+                                        <input type="text" class="form-control pass-input" name="from_address" maxlength="255" placeholder="Address" value="{{ old('from_address') }}">
 									</div>
 	                    		</div>
 	                    		<div class="col-lg-3 col-md-3 col-sm-12">
@@ -133,6 +135,8 @@
 	                    			<div class="form-group">
 									    <label class="col-form-label">Area</label>
 										<input type="text" class="form-control pass-input" name="to_area" placeholder="Area">
+                                        <label>To Address</label>
+                                        <input type="text" class="form-control pass-input" name="to_address" maxlength="255" placeholder="Address" value="{{ old('to_address') }}">
 									</div>
 	                    		</div>
 		                    	<div class="col-lg-3 col-md-3 col-sm-12">

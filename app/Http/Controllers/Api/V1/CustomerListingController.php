@@ -20,7 +20,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 final class CustomerListingController
 {
     private const COLUMNS = ['id','category_id','ad_type','title','description','image','weight','weight_price','currency',
-        'from_country_id','from_city_id','from_area','to_country_id','to_city_id','to_area','departure_on','reached_on',
+        'from_country_id','from_city_id','from_area','from_address','to_address','to_country_id','to_city_id','to_area','departure_on','reached_on',
         'show_contact_info','isActive','isFeatured','created_at','updated_at'];
 
     private function query(Request $request): Builder
@@ -77,7 +77,7 @@ final class CustomerListingController
         foreach (['id','category_id','from_country_id','from_city_id','to_country_id','to_city_id','weight'] as $key) {
             $result[$key] = $row->{$key} === null ? null : (int)$row->{$key};
         }
-        foreach (['ad_type','title','description','currency','from_area','to_area','departure_on','reached_on','created_at','updated_at'] as $key) {
+        foreach (['ad_type','title','description','currency','from_area','to_area','from_address','to_address','departure_on','reached_on','created_at','updated_at'] as $key) {
             $result[$key] = $row->{$key};
         }
         $result['weight_price'] = $row->weight_price === null ? null : (float)$row->weight_price;
@@ -125,13 +125,13 @@ final class CustomerListingController
             $this->lockCustomer($request);
             $data = CustomerListingFields::validate($input);
             if (array_key_exists('description', $data)) $data['description'] = \App\Support\ListingDescription::html($data['description']);
-            $id = DB::table('post_ads')->insertGetId($data + ['created_by'=>$request->user()->id, 'isActive'=>0,
+            $id = DB::table('post_ads')->insertGetId($data + ['created_by'=>$request->user()->id, 'isActive'=>1,
                 'isFeatured'=>0,'show_contact_info'=>0,'image'=>'listing.png','created_at'=>now(),'updated_at'=>now()]);
 
             return $this->owned($request,(string)$id);
         });
 
-        return ApiResponse::success('Listing created and pending approval.', $this->serialize($listing), 201)
+        return ApiResponse::success('Listing created successfully.', $this->serialize($listing), 201)
             ->header('Cache-Control','no-store, private');
     }
 

@@ -123,6 +123,10 @@ class PostAdsController extends Controller
         if($request->isMethod('post')){
 
             $data = $request->all();
+            $request->validate([
+                'from_address' => 'sometimes|nullable|string|max:255',
+                'to_address' => 'sometimes|nullable|string|max:255',
+            ]);
             // dd($data);
 
             if($request->hasFile('image')){
@@ -159,13 +163,16 @@ class PostAdsController extends Controller
             $post_ads->from_country_id = $data['from_country_id'];
             $post_ads->from_city_id = $data['from_city_id'];
             $post_ads->from_area = $data['from_area'];
+            $post_ads->from_address = $data['from_address'] ?? null;
             $post_ads->to_country_id = $data['to_country_id'];
             $post_ads->to_city_id = $data['to_city_id'];
             $post_ads->to_area = $data['to_area'];
+            $post_ads->to_address = $data['to_address'] ?? null;
             $post_ads->departure_on = $data['departure_on'];
             $post_ads->reached_on = $data['reached_on'];
             $post_ads->show_contact_info = $data['show_contact_info'];
             $post_ads->created_by = Auth::user()->id;
+            $post_ads->isActive = 1;
             $post_ads->save();
 
             return redirect('/user/my-listing')->with('flash_message_success','Listing Added Successfully!');
@@ -187,6 +194,10 @@ class PostAdsController extends Controller
         if($request->isMethod('post')){
 
             $data = $request->all();
+            $request->validate([
+                'from_address' => 'sometimes|nullable|string|max:255',
+                'to_address' => 'sometimes|nullable|string|max:255',
+            ]);
 
             $post_ad = PostAd::where(['id'=>$id])->first();
             // image file delete start
@@ -235,9 +246,11 @@ class PostAdsController extends Controller
                 'from_country_id'=>$data['from_country_id'],
                 'from_city_id'=>$data['from_city_id'],
                 'from_area'=>$data['from_area'],
+                ...array_intersect_key($data, ['from_address' => true]),
                 'to_country_id'=>$data['to_country_id'],
                 'to_city_id'=>$data['to_city_id'],
                 'to_area'=>$data['to_area'],
+                ...array_intersect_key($data, ['to_address' => true]),
                 'departure_on'=>$data['departure_on'],
                 'reached_on'=>$data['reached_on'],
                 'show_contact_info'=>$data['show_contact_info'],

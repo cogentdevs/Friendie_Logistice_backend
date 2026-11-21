@@ -1,0 +1,3 @@
+PRIVACY POLICY - CONTENT NOT FOUND
+
+No standalone Privacy Policy content was found in the inspected application source. The footer contains a privacy-policy.html link, but this is not the policy text. No policy has been invented or extracted from Terms and Conditions.

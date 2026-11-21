@@ -173,6 +173,8 @@
                                         <div class="form-group">
                                             <label>From Area</label>
                                             <input type="text" class="form-control pass-input" name="from_area" value="{{ $listing->from_area }}" placeholder="Area">
+                                        <label>From Address</label>
+                                        <input type="text" class="form-control pass-input" name="from_address" maxlength="255" placeholder="Address" value="{{ old('from_address', $listing->from_address ?? null) }}">
                                         </div>
                                     </div>
                                     <div class="col-lg-6">
@@ -219,6 +221,8 @@
                                         <div class="form-group">
                                             <label>To Area</label>
                                             <input type="text" class="form-control pass-input" name="to_area" value="{{ $listing->to_area }}" placeholder="Area">
+                                        <label>To Address</label>
+                                        <input type="text" class="form-control pass-input" name="to_address" maxlength="255" placeholder="Address" value="{{ old('to_address', $listing->to_address ?? null) }}">
                                         </div>
                                     </div>
                                     <div class="col-lg-6">

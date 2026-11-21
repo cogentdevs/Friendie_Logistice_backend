@@ -1,0 +1,70 @@
+{
+    "images": [
+        {
+            "original": "public/frontend/img/about.jpg",
+            "export": "images/about.jpg",
+            "sha256": "40fcc85294af9b87195c3834a177c5fc4059529b1a9a68cc5579ab5f1b88e39b"
+        },
+        {
+            "original": "public/frontend/img/locations/sa.webp",
+            "export": "images/locations/sa.webp",
+            "sha256": "75d007c0947932962d5edeed3671c553d64835e4e8115fc6d9c41e73a7d8e38c"
+        },
+        {
+            "original": "public/frontend/img/locations/uae.webp",
+            "export": "images/locations/uae.webp",
+            "sha256": "e98415fbe704c6ae28442ce6ceefa153fe634db6b7d27cf435036dad7330fa50"
+        },
+        {
+            "original": "public/frontend/img/locations/oman.webp",
+            "export": "images/locations/oman.webp",
+            "sha256": "5770e8f598be0a604bfaf2cae98a86619714a59a42fb3ea6ac58edfbede460b5"
+        },
+        {
+            "original": "public/frontend/img/locations/phili.webp",
+            "export": "images/locations/phili.webp",
+            "sha256": "0d04525e992e02f0787611c974d41ee3a38ddd6c30b2ff52625bd6dee3401aea"
+        },
+        {
+            "original": "public/frontend/img/locations/beh.webp",
+            "export": "images/locations/beh.webp",
+            "sha256": "f030e7b7a81c668f5afe85d65b16b4276cfd6d54c46045666c0ca9c502c0f67e"
+        },
+        {
+            "original": "public/frontend/img/locations/pak-a.webp",
+            "export": "images/locations/pak-a.webp",
+            "sha256": "f0de7a8e610da1ac7179b8a437f5af3694744448298ff37a8235b3df8619a89a"
+        },
+        {
+            "original": "public/frontend/img/locations/ind.webp",
+            "export": "images/locations/ind.webp",
+            "sha256": "2f474495cc9e918ba481fe04128688a9f3e2772f146e84b1db9cd08201be45fe"
+        },
+        {
+            "original": "public/frontend/img/quotes.png",
+            "export": "images/quotes.png",
+            "sha256": "8bdbc4e6628d75d26fec067ebef349511cd358a3b869c2dfe611d595d286325f"
+        },
+        {
+            "original": "public/frontend/img/testimonial-1.jpg",
+            "export": "images/testimonial-1.jpg",
+            "sha256": "175ab74fc9e84a7a588115c7344fdfb58b754700fb61c974c63c538662c0b74d"
+        },
+        {
+            "original": "public/frontend/img/testimonial-2.jpg",
+            "export": "images/testimonial-2.jpg",
+            "sha256": "026f4a48655fc571dd55898eb69a3d0343328dba594dbbb7c29ef2fea1e2351c"
+        },
+        {
+            "original": "public/frontend/img/banner/aboutbanner.jpg",
+            "export": "images/banner/aboutbanner.jpg",
+            "sha256": "a4c7d8a6d094a2a111aca64cfa2708b0b8edc426e42132dce3e13169551c5cc1"
+        },
+        {
+            "original": "public/frontend/img/testi-bg.png",
+            "export": "images/testi-bg.png",
+            "sha256": "c83213b0b33a70c8b4139ce061ebb2918ff8e3eeeb4d0b19db6d97974449bee7"
+        }
+    ],
+    "missing": []
+}

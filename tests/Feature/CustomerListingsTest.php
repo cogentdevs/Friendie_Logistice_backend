@@ -92,21 +92,21 @@ class CustomerListingsTest extends TestCase
     public static function types():array {return [['Carring'],['Send']];}
 
     #[DataProvider('types')]
-    public function test_create_both_types_assigns_owner_pending_status_and_is_not_public(string $type):void
+    public function test_create_both_types_assigns_owner_published_status_and_is_public(string $type):void
     {
         $data=$this->fields(['ad_type'=>$type,'currency'=>' usd ']);
         $response=$this->postJson('/api/v1/customer/listings',$data,$this->headers())->assertCreated()
-            ->assertJsonPath('data.status',0)->assertJsonPath('data.is_featured',false)->assertJsonPath('data.currency','USD')
+            ->assertJsonPath('data.status',1)->assertJsonPath('data.is_featured',false)->assertJsonPath('data.currency','USD')
             ->assertJsonPath('data.from_area','Area 12-B')->assertJsonPath('data.ad_type',$type)
             ->assertDontSee($this->customer->phone)->assertDontSee($this->customer->email)->assertDontSee($this->other->email)
             ->assertJsonMissingPath('data.created_by');
         $id=$response->json('data.id');$row=DB::table('post_ads')->find($id);
-        $this->assertSame($this->customer->id,(int)$row->created_by);$this->assertSame(0,(int)$row->isActive);
+        $this->assertSame($this->customer->id,(int)$row->created_by);$this->assertSame(1,(int)$row->isActive);
         $this->assertSame(0,(int)$row->isFeatured);$this->assertSame(0,(int)$row->show_contact_info);
         $this->assertSame('listing.png',$row->image);
-        $this->getJson('/api/v1/listings/'.$id)->assertNotFound();
-        $this->getJson('/api/v1/listings')->assertOk()->assertJsonPath('data.items',[]);
-        $this->getJson('/api/v1/home')->assertOk()->assertJsonPath('data.featured_listings',[])->assertJsonPath('data.latest_listings',[]);
+        $this->getJson('/api/v1/listings/'.$id)->assertOk()->assertJsonPath('data.id',$id);
+        $this->getJson('/api/v1/listings')->assertOk()->assertJsonPath('data.items.0.id',$id);
+        $this->getJson('/api/v1/home')->assertOk()->assertJsonPath('data.featured_listings',[])->assertJsonPath('data.latest_listings.0.id',$id);
         $this->getJson('/api/v1/customer/listings/'.$id,$this->headers())->assertOk()->assertJsonPath('data.id',$id);
         Mail::assertNothingSent();
     }
@@ -116,7 +116,7 @@ class CustomerListingsTest extends TestCase
         $data=$this->fields(['departure_on'=>'2000-01-01','reached_on'=>'2000-01-01']);
         foreach(['weight','weight_price','description','from_area','to_area']as$key)unset($data[$key]);
         $this->postJson('/api/v1/customer/listings',$data,$this->headers())->assertCreated()
-            ->assertJsonPath('data.weight',null)->assertJsonPath('data.weight_price',null)->assertJsonPath('data.status',0);
+            ->assertJsonPath('data.weight',null)->assertJsonPath('data.weight_price',null)->assertJsonPath('data.status',1);
     }
 
     public static function requiredFields():array
@@ -362,7 +362,7 @@ class CustomerListingsTest extends TestCase
         $result=$this->postJson('/api/v1/customer/listings',$this->fields(['description'=>'<p onclick="x">Safe<script>x</script></p>']),$this->headers())->assertCreated();
         $id=$result->json('data.id');
         $this->assertSame('<p>Safe</p>',DB::table('post_ads')->where('id',$id)->value('description'));
-        $result->assertJsonPath('data.description','<p>Safe</p>')->assertJsonPath('data.status',0);
+        $result->assertJsonPath('data.description','<p>Safe</p>')->assertJsonPath('data.status',1);
         $this->putJson('/api/v1/customer/listings/'.$id,['title'=>'changed'],$this->headers())->assertOk()->assertJsonPath('data.description','<p>Safe</p>');
         $this->putJson('/api/v1/customer/listings/'.$id,['description'=>'<h2>Good</h2><iframe>x</iframe>'],$this->headers())->assertOk()->assertJsonPath('data.description','<h2>Good</h2>x');
         foreach([null,''] as $value)$this->putJson('/api/v1/customer/listings/'.$id,['description'=>$value],$this->headers())->assertOk()->assertJsonPath('data.description',null);
@@ -377,7 +377,7 @@ class CustomerListingsTest extends TestCase
         $response=$controller->addPostAds($request);
         $this->assertStringEndsWith('/user/my-listing',$response->getTargetUrl());
         $row=DB::table('post_ads')->where('created_by',$this->customer->id)->orderByDesc('id')->first();
-        $this->assertSame('<p>Safe</p>',$row->description);$this->assertSame(0,(int)$row->isActive);$this->assertSame('listing.png',$row->image);
+        $this->assertSame('<p>Safe</p>',$row->description);$this->assertSame(1,(int)$row->isActive);$this->assertSame('listing.png',$row->image);
         $this->other->syncRoles(['admin']);
         foreach([$this->customer,$this->other] as $actor){
             $this->actingAs($actor,'web');
@@ -406,5 +406,84 @@ class CustomerListingsTest extends TestCase
             $this->assertSame($width,mb_strwidth($text));$this->assertStringEndsWith('...',$text);
         }
         $this->assertSame('one two three',\App\Support\ListingDescription::preview('<p>one</p><p>two<br>three</p>',150));
+    }
+
+    public function test_separate_addresses_are_owner_only_and_partial_updates_preserve_area_and_omitted_address(): void
+    {
+        $response=$this->postJson('/api/v1/customer/listings',$this->fields([
+            'from_address'=>'Private origin 123','to_address'=>'Private destination 456',
+        ]),$this->headers())->assertCreated()->assertJsonPath('data.status',1)
+            ->assertJsonPath('data.from_address','Private origin 123')->assertJsonPath('data.to_address','Private destination 456')
+            ->assertJsonPath('data.from_area','Area 12-B')->assertJsonPath('data.to_area','District 7');
+        $id=$response->json('data.id');
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_address'=>'New origin'],$this->headers())->assertOk()
+            ->assertJsonPath('data.from_address','New origin')->assertJsonPath('data.to_address','Private destination 456')
+            ->assertJsonPath('data.from_area','Area 12-B');
+        $this->putJson('/api/v1/customer/listings/'.$id,['to_address'=>null],$this->headers())->assertOk()
+            ->assertJsonPath('data.to_address',null)->assertJsonPath('data.from_address','New origin');
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_address'=>''],$this->headers())->assertOk()->assertJsonPath('data.from_address',null);
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_address'=>'private address canary'],$this->headers())->assertOk();
+        foreach(['/api/v1/home','/api/v1/listings','/api/v1/listings/'.$id] as $url){
+            $public=$this->getJson($url)->assertOk();
+            $public->assertDontSee('private address canary')->assertDontSee('from_address')->assertDontSee('to_address');
+        }
+        $other=$this->other->createToken('mobile',['mobile:account'])->plainTextToken;
+        $this->getJson('/api/v1/customer/listings/'.$id,$this->headers($other))->assertNotFound();
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_address'=>'spoofed'],$this->headers($other))->assertNotFound();
+        $this->assertSame('private address canary',DB::table('post_ads')->where('id',$id)->value('from_address'));
+    }
+
+    public function test_addresses_optional_and_validate_lengths_and_types_without_altering_listing(): void
+    {
+        $response=$this->postJson('/api/v1/customer/listings',$this->fields(),$this->headers())->assertCreated()
+            ->assertJsonPath('data.from_address',null)->assertJsonPath('data.to_address',null);
+        $id=$response->json('data.id');
+        foreach(['from_address','to_address'] as $field){
+            foreach([str_repeat('x',256),['invalid']] as $value){
+                $this->putJson('/api/v1/customer/listings/'.$id,[$field=>$value],$this->headers())->assertUnprocessable()->assertJsonValidationErrors($field);
+            }
+        }
+        $this->assertNull(DB::table('post_ads')->where('id',$id)->value('from_address'));
+        $this->assertNull(DB::table('post_ads')->where('id',$id)->value('to_address'));
+    }
+
+    public function test_website_addresses_are_independent_preserve_omitted_edits_and_validate_before_writes(): void
+    {
+        $this->actingAs($this->customer,'web');$controller=new \App\Http\Controllers\PostAdsController();
+        $input=$this->fields(['from_address'=>'Origin address','to_address'=>'Destination address'])+['show_contact_info'=>0];
+        $reply=$controller->addPostAds(\Illuminate\Http\Request::create('/user/add-listing','POST',$input));
+        $this->assertStringEndsWith('/user/my-listing',$reply->getTargetUrl());
+        $row=DB::table('post_ads')->where('created_by',$this->customer->id)->orderByDesc('id')->first();
+        $this->assertSame('Origin address',$row->from_address);$this->assertSame('Destination address',$row->to_address);
+        $this->assertSame('Area 12-B',$row->from_area);$this->assertSame(1,(int)$row->isActive);
+        $this->other->syncRoles(['admin']);$this->actingAs($this->other,'web');
+        unset($input['from_address']);$input['to_address']=null;$input['cur_image']=$row->image;$input['isActive']=1;
+        $controller->editPostAds(\Illuminate\Http\Request::create('/admin/edit-listing/'.$row->id,'POST',$input),$row->id);
+        $updated=DB::table('post_ads')->where('id',$row->id)->first();
+        $this->assertSame('Origin address',$updated->from_address);$this->assertNull($updated->to_address);
+        $this->assertSame($row->from_area,$updated->from_area);$this->assertSame($row->image,$updated->image);
+        try {
+            $input['from_address']=str_repeat('a',256);
+            $controller->editPostAds(\Illuminate\Http\Request::create('/admin/edit-listing/'.$row->id,'POST',$input),$row->id);
+            $this->fail('Oversized address must fail validation');
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            $this->assertArrayHasKey('from_address',$error->errors());
+        }
+        $this->assertSame('Origin address',DB::table('post_ads')->where('id',$row->id)->value('from_address'));
+    }
+
+    public function test_address_form_values_are_escaped_in_all_three_forms(): void
+    {
+        $listing=(object)['from_address'=>'"><img src=x onerror=alert(1)>','to_address'=>'<script>x</script>'];
+        foreach(['resources/views/frontend/user/add-listing.blade.php','resources/views/frontend/user/edit-listing.blade.php','resources/views/admin/listing/edit_listing.blade.php'] as $path){
+            $source=file_get_contents(base_path($path));
+            foreach(['from','to'] as $side){
+                $this->assertStringContainsString('name="'.$side.'_area"',$source);
+                preg_match('/^.*<input[^\r\n]*name="'.$side.'_address"[^\r\n]*/m',$source,$line);
+                $this->assertNotEmpty($line);$this->assertStringContainsString('maxlength="255"',$line[0]);
+                $html=\Illuminate\Support\Facades\Blade::render($line[0],['listing'=>$listing]);
+                $this->assertStringNotContainsString('<script>',$html);$this->assertStringNotContainsString('<img ',$html);
+            }
+        }
     }
 }

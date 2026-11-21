@@ -13,11 +13,11 @@ For the consolidated URL / Method / Body guide covering all 28 registered API ro
 Inspected `routes/web.php`, `PostAdsController`, customer add/edit/my-listing Blade sources, `PostAd`, the actual MariaDB schema, public listing query and customer dashboard. No Blade page was rendered against the original database.
 
 - `post_ads.ad_type` is VARCHAR; both stored values and form options are exactly `Carring` and `Send`.
-- New website inserts omit `isActive`; the actual database default is **0/pending**, unlike the old migration default of 1. Admin `markPublishedPostAds()` sets **1/published**.
+- New website and API listings explicitly set `isActive=1` (published), per owner approval. No admin approval is required for new posts. Database default remains unchanged; existing records are not modified. Admin publish/status controls remain available.
 - The wildcard view composer sets past-departure listings to **2/time out/expired**, regardless of prior status. It remains unchanged and is never invoked by these APIs.
 - Both type options use the same form requirements. There is no verified type-specific field difference. Weight/price and areas are optional; route/category/title/dates/currency are required in the form.
 - Owner management lists are not limited by public expiry/publication eligibility. The UI offers edit links across statuses, and the shared edit controller contains no status-based field edit restriction, dependency restriction or automatic renewed-approval transition. It unsafely accepts a submitted status. The API instead preserves the stored status and forbids client status/featured/owner changes. It does not invent a renewed-approval policy.
-- Editing a published listing keeps it published; editing an expired listing's date does not republish it. Admin workflow remains responsible for publication. Unknown stored statuses are readable by their owner but mutating edit/image operations return 409.
+- Editing a published listing keeps it published; editing an expired listing's date does not republish it. New listings are published directly; existing admin status controls remain unchanged. Unknown stored statuses are readable by their owner but mutating edit/image operations return 409.
 - There is one nullable `image` filename column; default `listing.png`; existing public directory is `frontend/img/listing`. No galleries, soft-delete column, declared model relationships or safe media-deletion ownership policy exist.
 - Existing web delete calls hard delete without owner/dependency checks; nondefault-image deletion also references an undefined variable/missing facade import. Rooms and reviews reference listing IDs, messages reference rooms, and the actual schema has no foreign keys to `post_ads`. Legacy writers do not coordinate on the parent row. A dependency check plus parent lock alone cannot guarantee concurrency-safe deletion across the existing website.
 
@@ -97,9 +97,9 @@ The same request with `ad_type: "Send"` is supported; no invented type-specific 
 
 No future-only departure restriction was found in the verified form/controller, so past dates are not arbitrarily rejected. They never bypass public date filtering; no status synchronization occurs here. A business decision to prohibit historical submissions needs separate approval. Numeric/date/reference rules and text bounds are explicit API validation hardening; the old web controller lacks equivalent robust server validation.
 
-Server assigns authenticated owner, `isActive=0`, `isFeatured=0`, default image and timestamps. Reject `user_id`, `owner_id`, `created_by`, `status`, `isActive`, `isVerified`, `isFeatured`, approval/system timestamps, raw image filenames and other unknown fields. Files go through the separate image endpoint.
+Server assigns authenticated owner, `isActive=1`, `isFeatured=0`, default image and timestamps. Reject `user_id`, `owner_id`, `created_by`, `status`, `isActive`, `isVerified`, `isFeatured`, approval/system timestamps, raw image filenames and other unknown fields. Files go through the separate image endpoint.
 
-HTTP **201**: `Listing created and pending approval.` with the owner listing object below. A future-dated pending record remains absent from public home/listings/details until the existing admin/public rules permit it. No notification/email is sent.
+HTTP **201**: `Listing created successfully.` with the owner listing object below. A new eligible published record appears in public home/listings/details immediately; existing category, joins and departure-date filters still apply. No notification/email is sent.
 
 ## GET /api/v1/customer/listings/{id}
 
@@ -190,7 +190,7 @@ Per authenticated account **and IP**: create 10/hour, update 30/15 minutes, atte
 
 1. Use a synthetic active verified account on the restricted isolated backend; obtain a bearer token from Phase 4 login.
 2. Read existing reference APIs for active category/geography/currency. They still return complete `data.items`, no pagination, literal case-insensitive search with exact/prefix/substring ranking, and only cities accept `country_id`.
-3. POST a JSON listing and save its returned ID. Expect pending 0 and public details 404; don't change real statuses merely to make it public.
+3. POST a JSON listing and save its returned ID. Expect published 1 and public details 200 when public date/category/join requirements are met; don't change real statuses merely to make it public.
 4. GET owner list with `status=0&ad_type=Carring&per_page=20&page=1`, then GET details. PUT only editable fields; don't echo response status/system fields back.
 5. POST multipart image; open its trusted URL on the intended client. DELETE image resets reference, while DELETE listing remains 409 pending policy approval.
 
@@ -214,3 +214,18 @@ Allowed HTML: `p,br,strong,b,em,i,u,s,blockquote,h2,h3,ul,ol,li,a[href]`. Links 
 The same focused helper protects website/customer/admin description writes and the full-detail final HTML output. No entity decoding occurs after purified HTML output. Customer/admin previews are purified, converted to text, truncated to the existing 150/100 display widths, then Blade-escaped. Historical records are not rewritten; final-output purification protects them. Encoded tags remain literal text.
 
 TinyMCE configuration is unchanged and still offers unsupported features that the server removes. This is intentional policy filtering, not complete editor feature compatibility. Definition caching is disabled to avoid vendor-directory writes and cross-environment cache files, at a processing-cost trade-off. No dependency was added. Original content in other contexts must still be treated as untrusted; unrelated website vulnerabilities are outside this patch. Browser visual and production load testing are not established by feature tests.
+
+
+## Separate private addresses - manual schema prerequisite
+
+Optional `from_address` and `to_address` are nullable strings, maximum 255 characters, separate from unchanged `from_area`/`to_area`. Supported on listing create/update and returned in authenticated owner list/detail/create/update responses only. Omitted creation fields default to NULL; omitted update fields preserve stored values. Explicit NULL or HTTP empty-string normalization clears the address. Public APIs, public website displays, chat and reviews do not expose these new fields. Website customer create/edit and admin edit use separate escaped address inputs.
+
+Migration prepared and not executed by Codex (the user subsequently applied the schema): `database/migrations/2026_11_21_000001_add_addresses_to_post_ads_table.php`. Adds only two nullable VARCHAR(255) columns; no backfill, area conversion, index or status changes. Down drops both columns and destroys any saved address data; do not roll back casually.
+
+Read-only verification after user migration confirmed both nullable VARCHAR(255) columns in the isolated and original databases. Codex did not execute a migration. Future environments must apply the scoped schema before these owner queries/website saves can work.
+
+After checking database identity/configuration, confirming a fresh verified backup and disposable restore, the USER may run the narrowly scoped migration. Codex must not execute it. First apply only to the isolated test schema, then run focused/full regressions. Original migration needs separate backup/readiness confirmation. Never use general migrate/refresh/reset.
+
+Synthetic body addition: {"from_area":"District A","from_address":"Building 12","to_area":"District B","to_address":"Building 34"}. All other fields, publication1 behavior, description sanitization, ownership and DELETE409 remain unchanged.
+
+Address verification after user migration: focused tests 4/89; full safe regression 396 tests / 3621 assertions, zero failures, one existing PHP 8.4 vendor deprecation. The original-database fingerprint was unchanged across this verification and all 43 protected media hashes matched. An edit-form insertion issue found by the focused test was corrected in the address inputs only. No original records, migration execution, browser end-to-end UI testing, commit or deployment was performed by Codex.
