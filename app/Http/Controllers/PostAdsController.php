@@ -199,6 +199,10 @@ class PostAdsController extends Controller
                 'to_address' => 'sometimes|nullable|string|max:255',
             ]);
 
+            // Pin compatibility only; no form fields or image workflow changes.
+            $locationIds = \App\Support\Api\ListingCoordinates::available()
+                ? \App\Support\Api\ListingCoordinates::locationIds($data) : [];
+
             $post_ad = PostAd::where(['id'=>$id])->first();
             // image file delete start
             $image = $post_ad->image;
@@ -233,8 +237,7 @@ class PostAdsController extends Controller
                 $filename = $data['cur_image'];
             }
 
-            PostAd::where(['id'=>$id])->update
-            ([
+            $changes = [
                 'category_id'=>$data['category_id'],
                 'ad_type'=>$data['ad_type'],
                 'title'=>$data['title'],
@@ -243,19 +246,28 @@ class PostAdsController extends Controller
                 'weight'=>$data['weight'],
                 'weight_price'=>$data['weight_price'],
                 'currency'=>$data['currency'],
-                'from_country_id'=>$data['from_country_id'],
-                'from_city_id'=>$data['from_city_id'],
+                ...array_intersect_key($data, ['from_country_id' => true]),
+                ...array_intersect_key($data, ['from_city_id' => true]),
                 'from_area'=>$data['from_area'],
                 ...array_intersect_key($data, ['from_address' => true]),
-                'to_country_id'=>$data['to_country_id'],
-                'to_city_id'=>$data['to_city_id'],
+                ...array_intersect_key($data, ['to_country_id' => true]),
+                ...array_intersect_key($data, ['to_city_id' => true]),
                 'to_area'=>$data['to_area'],
                 ...array_intersect_key($data, ['to_address' => true]),
                 'departure_on'=>$data['departure_on'],
                 'reached_on'=>$data['reached_on'],
                 'show_contact_info'=>$data['show_contact_info'],
                 'isActive'=>$data['isActive'],
-            ]);
+            ];
+
+            DB::transaction(function () use ($id, $changes, $locationIds) {
+                $current = PostAd::whereKey($id)->lockForUpdate()->firstOrFail();
+                if (\App\Support\Api\ListingCoordinates::available()) {
+                    $changes = array_replace($changes, $locationIds,
+                        \App\Support\Api\ListingCoordinates::clearChangedLocations($locationIds, $current));
+                }
+                PostAd::whereKey($id)->update($changes);
+            });
 
             if ($user_id == 1 || $user_id == '1') {
 

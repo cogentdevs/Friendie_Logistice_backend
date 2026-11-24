@@ -11,7 +11,7 @@ final class CustomerListingFields
 {
     public const EDITABLE = ['ad_type', 'title', 'description', 'category_id', 'from_country_id', 'from_city_id',
         'from_area', 'from_address', 'to_address', 'to_country_id', 'to_city_id', 'to_area', 'weight', 'weight_price', 'currency',
-        'departure_on', 'reached_on', 'show_contact_info'];
+        'departure_on', 'reached_on', 'show_contact_info', ...ListingCoordinates::FIELDS];
 
     public static function validate(array $input, ?object $current = null): array
     {
@@ -25,6 +25,7 @@ final class CustomerListingFields
         if (isset($input['currency']) && is_string($input['currency'])) {
             $input['currency'] = mb_strtoupper(trim($input['currency']));
         }
+        $coordinates = ListingCoordinates::validate($input);
         $required = $current === null ? 'required' : 'sometimes|required';
         $presence = $current === null ? ['required'] : ['sometimes', 'required'];
         $rules = [
@@ -76,6 +77,11 @@ final class CustomerListingFields
             }
         });
 
-        return $validator->validate();
+        $data = $validator->validate();
+        if ($current !== null && ListingCoordinates::available()) {
+            $coordinates += ListingCoordinates::clearChangedLocations($data, $current, $coordinates);
+        }
+
+        return $data + $coordinates;
     }
 }

@@ -25,7 +25,12 @@ final class CustomerListingController
 
     private function query(Request $request): Builder
     {
-        return DB::table('post_ads')->select(self::COLUMNS)->where('created_by', $request->user()->id);
+        $columns = self::COLUMNS;
+        if (\App\Support\Api\ListingCoordinates::available()) {
+            $columns = array_merge($columns, \App\Support\Api\ListingCoordinates::FIELDS);
+        }
+
+        return DB::table('post_ads')->select($columns)->where('created_by', $request->user()->id);
     }
 
     private function owned(Request $request, string $id, bool $lock = false): object
@@ -79,6 +84,9 @@ final class CustomerListingController
         }
         foreach (['ad_type','title','description','currency','from_area','to_area','from_address','to_address','departure_on','reached_on','created_at','updated_at'] as $key) {
             $result[$key] = $row->{$key};
+        }
+        foreach (\App\Support\Api\ListingCoordinates::FIELDS as $key) {
+            $result[$key] = isset($row->{$key}) ? (float)$row->{$key} : null;
         }
         $result['weight_price'] = $row->weight_price === null ? null : (float)$row->weight_price;
         $result['status'] = (int)$row->isActive;
