@@ -261,7 +261,7 @@
                         <li>Reached On <span>{{ date("d M, Y", strtotime($listing->reached_on)) }}</span></li>
                      </ul>
                     </div>
-                    @if($listing->show_contact_info == 1)
+                    @if($listing->show_contact_info == 1 && Auth::check() && (int)Auth::id() === (int)$listing->created_by)
                         <div class="card">
                             <h4><img src="{{ asset('frontend/img/breifcase.svg') }}" alt=""> Contact Info</h4>
                             <div class="map-details">   

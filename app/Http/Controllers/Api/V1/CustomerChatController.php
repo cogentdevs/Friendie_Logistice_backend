@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
-use App\Queries\Api\PublicListingQuery;
+use App\Services\DealContactAccess;
 use App\Services\EmailActivationService;
 use App\Support\Api\PublicData;
 use App\Support\ApiResponse;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-/** API-only two-party chat. No web controllers, Blade, mail or acceptance workflow. */
+/** Deal-authorized API chat. No Blade, mail, or lifecycle-state mutations. */
 final class CustomerChatController
 {
     private function input(Request $request, array $rules): array
@@ -36,15 +36,15 @@ final class CustomerChatController
 
     private function rooms(int $viewer): Builder
     {
-        return DB::table('post_ad_rooms as room')
-            ->join('post_ads as listing', 'listing.id', '=', 'room.post_ads_id')
-            ->join('users as initiator', 'initiator.id', '=', 'room.from_user_id')
-            ->join('users as owner', 'owner.id', '=', 'room.to_user_id')
-            ->whereColumn('room.to_user_id', 'listing.created_by')
-            ->whereColumn('room.from_user_id', '<>', 'room.to_user_id')
-            ->where(fn ($q) => $q->where('room.from_user_id', $viewer)->orWhere('room.to_user_id', $viewer))
+        $q = DB::table('post_ad_rooms as room')
+            ->leftJoin('post_ads as listing', 'listing.id', '=', 'room.post_ads_id')
+            ->leftJoin('users as initiator', 'initiator.id', '=', 'room.from_user_id')
+            ->leftJoin('users as owner', 'owner.id', '=', 'room.to_user_id')
             ->select('room.id','room.post_ads_id','room.from_user_id','room.to_user_id','room.created_at',
                 'listing.title','initiator.name as initiator_name','owner.name as owner_name');
+        DealContactAccess::scopeRooms($q,$viewer);
+        if (DealContactAccess::ready()) $q->selectSub(DB::table('listing_deals')->select('id')->whereColumn('conversation_id','room.id'),'deal_id');
+        return $q;
     }
 
     private function room(Request $request, string $id, bool $lock = false): object
@@ -85,7 +85,7 @@ final class CustomerChatController
     private function metadata(object $room, int $viewer): array
     {
         $otherIsOwner = (int)$room->from_user_id === $viewer;
-        return ['id'=>(int)$room->id,'listing'=>['id'=>(int)$room->post_ads_id,'title'=>PublicData::text($room->title,255)],
+        return ['id'=>(int)$room->id,'deal_id'=>isset($room->deal_id)?(int)$room->deal_id:null,'listing'=>['id'=>(int)$room->post_ads_id,'title'=>PublicData::text($room->title,255)],
             'other_participant'=>['id'=>(int)($otherIsOwner ? $room->to_user_id : $room->from_user_id),
                 'display_name'=>PublicData::text($otherIsOwner ? $room->owner_name : $room->initiator_name,255)],
             'created_at'=>$room->created_at];
@@ -135,63 +135,33 @@ final class CustomerChatController
 
     private function messageRules(): array
     {
-        // TEXT storage is 65,535 bytes. Bound both characters and encoded bytes; web has no explicit maximum.
-        return ['required','string','max:10000',function ($key,$value,$fail) {
-            if (is_string($value) && (trim($value) === '' || strlen($value) > 65535 || str_contains($value,"\0"))) $fail('Enter a valid nonempty text message.');
-        }];
-    }
-
-    private function insertMessage(object $room, int $sender, string $message): object
-    {
-        $id = DB::table('post_ad_room_messages')->insertGetId(['post_ad_room_id'=>$room->id,'from_user_id'=>$sender,
-            'to_user_id'=>$sender === (int)$room->from_user_id ? $room->to_user_id : $room->from_user_id,
-            'message'=>$message,'message_on'=>now()->format('d M Y'),'read_by'=>null,'created_at'=>now(),'updated_at'=>now()]);
-        return DB::table('post_ad_room_messages')->where('id',$id)->first();
+        return DealContactAccess::messageRules();
     }
 
     public function store(Request $request)
     {
         $this->limit($request);
-        $input = $this->input($request,['post_ads_id'=>'required|integer|min:1|max:2147483647','message'=>$this->messageRules()]);
-        $created = false;
-        $data = DB::transaction(function () use ($request,$input,&$created) {
-            $created = false; // Reset attempt-local state if Laravel retries a deadlock.
+        $input=$this->input($request,['deal_id'=>'required|integer|min:1','message'=>$this->messageRules()]);
+        $result=DB::transaction(function () use ($request,$input) {
             $this->lockCustomer($request);
-            $listing = DB::table('post_ads')->where('id',$input['post_ads_id'])->lockForUpdate()->first();
-            abort_unless($listing,404);
-            abort_if((int)$listing->created_by === (int)$request->user()->id,422);
-            $owner = User::find($listing->created_by);
-            abort_unless($owner && (int)$owner->isActive === 1 && (int)$owner->isVerified === 1
-                && app(EmailActivationService::class)->customer($owner),404);
-            $roomId = DB::table('post_ad_rooms')->where('post_ads_id',$listing->id)
-                ->where('from_user_id',$request->user()->id)->where('to_user_id',$owner->id)->orderBy('id')->value('id');
-            if ($roomId === null) {
-                // Website Message Now requires a future departure; do not target private listings by guessed ID.
-                abort_unless(PublicListingQuery::make()->where('ads.id',$listing->id)
-                    ->where('ads.departure_on','>',now()->toDateString())->exists(),404);
-                $roomId = DB::table('post_ad_rooms')->insertGetId(['post_ads_id'=>$listing->id,'from_user_id'=>$request->user()->id,
-                    'to_user_id'=>$owner->id,'created_at'=>now(),'updated_at'=>now()]);
-                $created = true;
-            }
-            $room = $this->room($request,(string)$roomId,true);
-            // Existing rooms are returned without duplicating the first message on retries.
-            if ($created) $this->insertMessage($room,(int)$request->user()->id,$input['message']);
-            return $this->metadata($room,(int)$request->user()->id);
-        }, 3);
-        return ApiResponse::success($created ? 'Conversation created successfully.' : 'Conversation already exists.',$data,$created ? 201 : 200);
+            return DealContactAccess::open((int)$input['deal_id'],(int)$request->user()->id,$input['message']);
+        },3);
+        $data=$this->metadata($this->room($request,(string)$result['room']->id),(int)$request->user()->id);
+        return ApiResponse::success($result['created']?'Conversation created successfully.':'Conversation already exists.',
+            $data,$result['created']?201:200)->header('Cache-Control','no-store, private');
     }
 
     public function send(Request $request, string $id)
     {
         $this->limit($request);$this->room($request,$id);
-        $input = $this->input($request,['message'=>$this->messageRules()]);
-        $data = DB::transaction(function () use ($request,$id,$input) {
-            $this->lockCustomer($request);$room = $this->room($request,$id,true);
-            return $this->messageData($this->insertMessage($room,(int)$request->user()->id,$input['message']),$room);
-        }, 3);
-        return ApiResponse::success('Message sent successfully.',$data,201);
+        $input=$this->input($request,['message'=>$this->messageRules()]);
+        $data=DB::transaction(function () use ($request,$id,$input) {
+            $this->lockCustomer($request);
+            $message=DealContactAccess::send((int)$id,(int)$request->user()->id,$input['message']);
+            return $this->messageData($message,$this->room($request,$id));
+        },3);
+        return ApiResponse::success('Message sent successfully.',$data,201)->header('Cache-Control','no-store, private');
     }
-
     public function read(Request $request, string $id)
     {
         $this->limit($request);$this->room($request,$id);$this->input($request,[]);

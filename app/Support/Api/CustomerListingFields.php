@@ -11,7 +11,7 @@ final class CustomerListingFields
 {
     public const EDITABLE = ['ad_type', 'title', 'description', 'category_id', 'from_country_id', 'from_city_id',
         'from_area', 'from_address', 'to_address', 'to_country_id', 'to_city_id', 'to_area', 'weight', 'weight_price', 'currency',
-        'departure_on', 'reached_on', 'show_contact_info', ...ListingCoordinates::FIELDS];
+        'departure_on', 'reached_on', 'show_contact_info', ...ListingCoordinates::FIELDS, ...ListingCoordinates::PIN_INPUTS];
 
     public static function validate(array $input, ?object $current = null): array
     {

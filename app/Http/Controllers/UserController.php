@@ -456,8 +456,9 @@ class UserController extends Controller
     }
 
     public function messagesPostAds(){
+        abort_unless(\App\Services\DealContactAccess::customer((int)Auth::id()),403);
 
-        $ads =  DB::table('post_ad_rooms as room')
+        $ads =  \App\Services\DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                 ->join('post_ads as ads','room.post_ads_id','=','ads.id')
                 ->join('categories as cat','ads.category_id','=','cat.id')
                 ->join('countries as fcon','ads.from_country_id','=','fcon.id')
@@ -467,8 +468,7 @@ class UserController extends Controller
                 ->join('users as f_user','room.from_user_id','=','f_user.id')
                 ->join('users as t_user','room.to_user_id','=','t_user.id')
                 ->select('room.*', 'ads.title', 'ads.image', 'ads.ad_type', 'ads.weight', 'ads.weight_price', 'ads.currency', 'ads.from_area', 'ads.to_area', 'ads.departure_on', 'ads.reached_on', 'ads.isActive', 'cat.name as category_name', 'fcon.name as from_country_name', 'fc.name as from_city_name', 'tcon.name as to_country_name', 'tc.name as to_city_name', 'f_user.name as fromUserName', 'f_user.image as fromUserImage', 't_user.name as toUserName', 't_user.image as toUserImage', DB::raw('(SELECT COUNT(*) FROM post_ad_room_messages WHERE post_ad_room_messages.post_ad_room_id = room.id AND post_ad_room_messages.read_by IS NULL AND post_ad_room_messages.to_user_id = ' . Auth::user()->id . ') AS unread_message_count'))
-                ->where(['room.from_user_id' => Auth::user()->id])
-                ->orWhere(['room.to_user_id' => Auth::user()->id])
+
                 ->groupBy('room.post_ads_id')
                 ->orderBy('room.id', 'desc')
                 ->paginate(10);
@@ -480,6 +480,7 @@ class UserController extends Controller
 
     public function messagesPostAdsUserList($post_id)
     {
+        \App\Services\DealContactAccess::webListing((int)$post_id,(int)Auth::id());
         $chk_post = DB::table('post_ads')->where(['id' => $post_id])->first();
 
         // Subquery to fetch the most recent message for each room
@@ -488,12 +489,12 @@ class UserController extends Controller
                     ->groupBy('msg.post_ad_room_id');
 
         // Main query
-        if ($chk_post->created_by == Auth::user()->id) {
+        if (($chk_post->created_by ?? 0) == Auth::user()->id) {
             $subQuery = DB::table('post_ad_room_messages')
                         ->select('post_ad_room_id', DB::raw('MAX(created_at) as last_message_time'))
                         ->groupBy('post_ad_room_id');
 
-            $rooms = DB::table('post_ad_rooms as room')
+            $rooms = \App\Services\DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -512,7 +513,7 @@ class UserController extends Controller
                     ->get();
 
         } else {
-            $rooms = DB::table('post_ad_rooms as room')
+            $rooms = \App\Services\DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -545,16 +546,14 @@ class UserController extends Controller
 
         if($request->isMethod('post')){
 
-            $data = $request->input();
-
-            $review = new Review();
-            $review->post_ads_id = $data['post_ads_id'];
-            $review->from_user_id = $data['from_user_id'];
-            $review->to_user_id = $data['to_user_id'];
-            $review->rating = $data['rating'];
-            $review->review = $data['review'];
-            $review->date_time = date('Y-m-d');
-            $review->save();
+            abort_unless(Auth::check(),401);
+            $data=$request->validate([
+                'deal_id'=>'sometimes|integer|min:1|max:'.PHP_INT_MAX,
+                'post_ads_id'=>'required_without:deal_id|integer|min:1|max:2147483647',
+                'from_user_id'=>'sometimes|integer|min:1|max:2147483647',
+                'to_user_id'=>'sometimes|integer|min:1|max:2147483647',
+            ]+\App\Services\Api\DealReviews::rules());
+            \App\Services\Api\DealReviews::submit((int)Auth::id(),$data,null,true);
            
             return redirect()->back()->with('flash_message_success','Your Review Post Successfullyl.');
             

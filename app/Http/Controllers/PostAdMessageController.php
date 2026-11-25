@@ -11,6 +11,7 @@ use App\Models\PostAd;
 use App\Models\PostAdRoom;
 use App\Models\PostAdRoomMessage;
 use App\Mail\ChatMessageMail;
+use App\Services\DealContactAccess;
 use Session;
 use Mail;
 
@@ -20,24 +21,16 @@ class PostAdMessageController extends Controller
 
         if($request->isMethod('post')){
 
-            $data = $request->input();
-
-            $post_ad_room = new PostAdRoom();
-            $post_ad_room->post_ads_id = $data['post_ads_id'];
-            $post_ad_room->from_user_id = $data['from_user_id'];
-            $post_ad_room->to_user_id = $data['to_user_id'];
-            $post_ad_room->save();
-
-            $room_id =  $post_ad_room->id;
-
-            $post_ad_room_message = new PostAdRoomMessage();
-            $post_ad_room_message->post_ad_room_id = $room_id;
-            $post_ad_room_message->from_user_id = $data['from_user_id'];
-            $post_ad_room_message->to_user_id = $data['to_user_id'];
-            $post_ad_room_message->message = $data['message'];
-            $post_ad_room_message->message_on = date('d M Y');
-            $post_ad_room_message->save();
-
+            $input=$request->validate(['post_ads_id'=>'required|integer|min:1','deal_id'=>'sometimes|nullable|integer|min:1',
+                'from_user_id'=>'sometimes|integer','to_user_id'=>'sometimes|integer','message'=>DealContactAccess::webMessageRules()]);
+            $viewer=(int)Auth::id();
+            $deal=DealContactAccess::webDeal((int)$input['post_ads_id'],$viewer,isset($input['deal_id'])?(int)$input['deal_id']:null);
+            $recipient=(int)$deal->sender_user_id===$viewer?(int)$deal->carrier_user_id:(int)$deal->sender_user_id;
+            abort_if(isset($input['from_user_id']) && (int)$input['from_user_id']!==$viewer,403);
+            abort_if(isset($input['to_user_id']) && (int)$input['to_user_id']!==$recipient,403);
+            $opened=DealContactAccess::open((int)$deal->id,$viewer,$input['message']);
+            $room_id=$opened['room']->id;
+            $data=['post_ads_id'=>$opened['room']->post_ads_id,'from_user_id'=>$viewer,'to_user_id'=>$recipient,'message'=>$input['message']];
             $chk_post =  DB::table('post_ads')->where(['id' => $data['post_ads_id']])->first();
             $post_title = str_replace(' ', '-', strtolower($chk_post->title));
 
@@ -51,7 +44,7 @@ class PostAdMessageController extends Controller
                 'message'       => $data['message'],
             );
 
-            Mail::to($to_user->email)->send(new ChatMessageMail($mail_data));
+            if ($opened['created']) Mail::to($to_user->email)->send(new ChatMessageMail($mail_data));
 
             return redirect('/user/messages/'.$data['post_ads_id'].'/'.$post_title.'/'.$room_id.'='.md5($room_id));
         }
@@ -59,10 +52,13 @@ class PostAdMessageController extends Controller
     }
 
     public function getRoomMessages($post_id, $post_slug, $room_id, $room_slug){
+        abort_unless(DealContactAccess::customer((int)Auth::id()),403);
+        $privacyRoom=DealContactAccess::room((int)$room_id,(int)Auth::id());
+        abort_unless((int)$privacyRoom->post_ads_id===(int)$post_id,404);
 
         $chk_post =  DB::table('post_ads')->where(['id' => $post_id])->first();
 
-        PostAdRoomMessage::where(['post_ad_room_id'=>$room_id, 'to_user_id' => Auth::user()->id])->update
+        DealContactAccess::messages($privacyRoom)->where('to_user_id',Auth::id())->whereNull('read_by')->update
         ([
             'read_by'=>Auth::user()->id
         ]);
@@ -73,8 +69,8 @@ class PostAdMessageController extends Controller
             ->groupBy('msg.post_ad_room_id');
 
         // Main query
-        if ($chk_post->created_by == Auth::user()->id) {
-            $rooms = DB::table('post_ad_rooms as room')
+        if (($chk_post->created_by ?? $privacyRoom->to_user_id) == Auth::user()->id) {
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -92,7 +88,7 @@ class PostAdMessageController extends Controller
                     ->orderBy('recent_msg.last_message_time', 'desc')
                     ->get();
         } else {
-            $rooms = DB::table('post_ad_rooms as room')
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -113,14 +109,14 @@ class PostAdMessageController extends Controller
 
         $post_id = $post_id;
 
-        $current_room = DB::table('post_ad_rooms as room')
+        $current_room = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                         ->join('users as f_user', 'room.from_user_id', '=', 'f_user.id')
                         ->join('users as t_user', 'room.to_user_id', '=', 't_user.id')
                         ->select('room.*', 'f_user.name as fromUserName', 'f_user.image as fromUserImage', 't_user.name as toUserName', 't_user.image as toUserImage')
                         ->where(['room.id' => $room_id])
                         ->first();
 
-        $room_messages =  PostAdRoomMessage::where(['post_ad_room_id' => $room_id])->get();
+        $room_messages =  DealContactAccess::messages($privacyRoom)->get();
 
         return view('frontend.user.messages')->with(compact('post_id', 'rooms', 'current_room', 'room_messages'));        
 
@@ -130,16 +126,15 @@ class PostAdMessageController extends Controller
 
         if($request->isMethod('post')){
 
-            $data = $request->input();
-
-            $post_ad_room_message = new PostAdRoomMessage();
-            $post_ad_room_message->post_ad_room_id = $data['post_ad_room_id'];
-            $post_ad_room_message->from_user_id = $data['from_user_id'];
-            $post_ad_room_message->to_user_id = $data['to_user_id'];
-            $post_ad_room_message->message = $data['message'];
-            $post_ad_room_message->message_on = date('d M Y');
-            $post_ad_room_message->save();
-
+            $input=$request->validate(['post_ad_room_id'=>'required|integer|min:1','from_user_id'=>'sometimes|integer',
+                'to_user_id'=>'sometimes|integer','message'=>DealContactAccess::webMessageRules()]);
+            $viewer=(int)Auth::id();
+            $privacyRoom=DealContactAccess::room((int)$input['post_ad_room_id'],$viewer);
+            $recipient=$viewer===(int)$privacyRoom->from_user_id?(int)$privacyRoom->to_user_id:(int)$privacyRoom->from_user_id;
+            abort_if(isset($input['from_user_id']) && (int)$input['from_user_id']!==$viewer,403);
+            abort_if(isset($input['to_user_id']) && (int)$input['to_user_id']!==$recipient,403);
+            DealContactAccess::send((int)$privacyRoom->id,$viewer,$input['message']);
+            $data=['post_ad_room_id'=>$privacyRoom->id,'from_user_id'=>$viewer,'to_user_id'=>$recipient,'message'=>$input['message']];
             $room =  DB::table('post_ad_rooms')->where(['id' => $data['post_ad_room_id']])->first();
             $chk_post =  DB::table('post_ads')->where(['id' => $room->post_ads_id])->first();
             $from_user =  DB::table('users')->where(['id' => $data['from_user_id']])->first();
@@ -161,6 +156,7 @@ class PostAdMessageController extends Controller
 
     public function getUserChatList($post_id)
     {
+        DealContactAccess::webListing((int)$post_id,(int)Auth::id());
         $chk_post =  DB::table('post_ads')->where(['id' => $post_id])->first();
 
         // Subquery to fetch the most recent message for each room
@@ -169,8 +165,8 @@ class PostAdMessageController extends Controller
             ->groupBy('msg.post_ad_room_id');
 
         // Main query
-        if ($chk_post->created_by == Auth::user()->id) {
-            $rooms = DB::table('post_ad_rooms as room')
+        if (($chk_post->created_by ?? 0) == Auth::user()->id) {
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -188,7 +184,7 @@ class PostAdMessageController extends Controller
                     ->orderBy('recent_msg.last_message_time', 'desc')
                     ->get();
         } else {
-            $rooms = DB::table('post_ad_rooms as room')
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -212,13 +208,16 @@ class PostAdMessageController extends Controller
 
     public function getUserChats($post_ad_room_id)
     {
-        $room_messages =  PostAdRoomMessage::where(['post_ad_room_id' => $post_ad_room_id])->get();
+        abort_unless(DealContactAccess::customer((int)Auth::id()),403);
+        $privacyRoom=DealContactAccess::room((int)$post_ad_room_id,(int)Auth::id());
+        $room_messages =  DealContactAccess::messages($privacyRoom)->get();
 
         return view('frontend.user.partials.chats', compact('room_messages'))->render();
     }
 
     public function getSearchChatUsers($post_id, $search)
     {
+        DealContactAccess::webListing((int)$post_id,(int)Auth::id());
         $chk_post =  DB::table('post_ads')->where(['id' => $post_id])->first();
 
         // Subquery to fetch the most recent message for each room
@@ -227,8 +226,8 @@ class PostAdMessageController extends Controller
             ->groupBy('msg.post_ad_room_id');
 
         // Main query
-        if ($chk_post->created_by == Auth::user()->id) {
-            $rooms = DB::table('post_ad_rooms as room')
+        if (($chk_post->created_by ?? 0) == Auth::user()->id) {
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })
@@ -250,7 +249,7 @@ class PostAdMessageController extends Controller
                     ->get();
 
         } else {
-            $rooms = DB::table('post_ad_rooms as room')
+            $rooms = DealContactAccess::scopeRooms(DB::table('post_ad_rooms as room'),(int)Auth::id())
                     ->joinSub($subQuery, 'recent_msg', function ($join) {
                         $join->on('room.id', '=', 'recent_msg.post_ad_room_id');
                     })

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Queries\Api\PublicListingQuery;
 use App\Support\Api\PublicData;
 use App\Support\ApiResponse;
+use App\Services\Api\ListingDeals;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +21,12 @@ final class HomeController
         $featured = PublicListingQuery::make()->where('ads.isFeatured', 1)
             ->where('ads.departure_on', '>', now()->toDateString())->orderByDesc('ads.id')->limit(8)->get();
         $latest = PublicListingQuery::make()->orderByDesc('ads.id')->limit(8)->get();
+        $availability=ListingDeals::listingData($featured->concat($latest),$request);
 
         return ApiResponse::success('Home retrieved successfully.', [
             'categories' => $categories->values()->all(),
-            'featured_listings' => $featured->map(fn ($row) => PublicData::listing($row))->values()->all(),
-            'latest_listings' => $latest->map(fn ($row) => PublicData::listing($row))->values()->all(),
-        ]);
+            'featured_listings' => $featured->map(fn ($row) => PublicData::listing($row)+$availability[$row->id])->values()->all(),
+            'latest_listings' => $latest->map(fn ($row) => PublicData::listing($row)+$availability[$row->id])->values()->all(),
+        ])->header('Cache-Control','no-store, private');
     }
 }

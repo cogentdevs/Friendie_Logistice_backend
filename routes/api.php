@@ -14,6 +14,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         $controller = \App\Http\Controllers\Api\V1\CustomerController::class;
         $protected = ['auth:sanctum', \App\Http\Middleware\EligibleMobileCustomer::class];
         $readOnly = [\App\Http\Middleware\ReadOnlyCustomerSanctum::class, ...$protected];
+        $notifications = \App\Http\Controllers\Api\V1\CustomerNotificationController::class;
+        Route::get('notifications', [$notifications, 'index'])->middleware($readOnly)->name('notifications.index');
+        Route::get('notifications/counts', [$notifications, 'counts'])->middleware($readOnly)->name('notifications.counts');
+        Route::post('notifications/{id}/read', [$notifications, 'read'])->whereNumber('id')->middleware($protected)->name('notifications.read');
+        $deals = \App\Http\Controllers\Api\V1\CustomerDealController::class;
+        Route::get('deals', [$deals, 'index'])->middleware($readOnly)->name('deals.index');
+        Route::get('deals/{id}/contact', [$deals, 'contact'])->whereNumber('id')->middleware($readOnly)->name('deals.contact');
+        Route::get('deals/{id}', [$deals, 'show'])->whereNumber('id')->middleware($readOnly)->name('deals.show');
+        Route::post('deals', [$deals, 'store'])->middleware($protected)->name('deals.store');
+        foreach (['accept', 'reject', 'confirm', 'cancel', 'pickup', 'complete'] as $action) {
+            Route::post('deals/{id}/'.$action, [$deals, 'transition'])->whereNumber('id')
+                ->defaults('action', $action)->middleware($protected)->name('deals.'.$action);
+        }
         $reviews = \App\Http\Controllers\Api\V1\CustomerReviewController::class;
         Route::get('reviews/received', [$reviews, 'received'])->middleware($readOnly)->name('reviews.received');
         Route::get('reviews/given', [$reviews, 'given'])->middleware($readOnly)->name('reviews.given');
@@ -64,4 +77,5 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('currencies', CurrencyController::class)->name('currencies');
     Route::get('listings', [ListingController::class, 'index'])->name('listings.index');
     Route::get('listings/{id}', [ListingController::class, 'show'])->whereNumber('id')->name('listings.show');
+    Route::get('listings/{id}/reviews', [\App\Http\Controllers\Api\V1\CustomerReviewController::class, 'listingReviews'])->whereNumber('id')->name('listings.reviews');
 });

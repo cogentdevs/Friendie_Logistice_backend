@@ -2,6 +2,56 @@
 
 **Status: PARTIAL.** Owner browse/create/detail/update and single-image management are implemented. Destructive DELETE is deliberately blocked with HTTP 409 pending an approved retention/dependency policy. Seven routes exist; a registered deletion route must not be described as completed destructive deletion. No Phase 7 workflow is implemented.
 
+## Optional location pins: coordinate pairs and Google Maps links
+
+`POST /api/v1/customer/listings` and `PUT /api/v1/customer/listings/{id}` accept optional
+`from_location_pin` and `to_location_pin` strings in JSON or form submissions. Each string
+can be a raw `latitude, longitude` pair or a supported HTTPS Google Maps URL. Existing
+`from_latitude`/`from_longitude` and `to_latitude`/`to_longitude` fields retain their existing
+validation and behavior. Use only one input form per side; mixing a pin field with either
+numeric field for that side returns 422, even when one value is null.
+
+```json
+{"from_location_pin":"https://www.google.com/maps/search/?api=1&query=24.8607343%2C67.0011364","to_location_pin":"31.5203696, 74.3587473"}
+```
+
+Supported hosts are exactly `google.com`, `www.google.com` (under `/maps`),
+`maps.google.com`, `maps.app.goo.gl/<code>` and legacy `goo.gl/maps/<code>`.
+Place URLs with an explicit `!3dLAT!4dLNG` pin and numeric `q`/`query` parameters are
+supported. Share/short links are resolved only through validated redirects. A viewport
+`@lat,lng`, `ll` map center, named address search, directions, multiple conflicting pins,
+place ID without resolvable coordinates or a page needing HTML/JavaScript scraping is
+not accepted as an exact pin. There is no address geocoding or Google API-key dependency.
+Regional Google domains outside the explicit host list are not supported.
+
+Omitting a pin preserves existing optional/partial-update behavior. Null or empty pin
+clears both stored coordinates for that side. Raw pair strings follow the existing
+7-decimal precision/range limits; URL coordinates are rounded to the existing 7-decimal
+columns. Zero and negative coordinates are supported. Existing selected-location change
+clearing and accepted-deal material-edit safeguards still apply.
+
+No URL is stored or returned. Only the existing numeric coordinate columns and response
+fields are used. Owner access and accepted/confirmed deal-scoped counterpart access are
+unchanged; public listings, history and chat do not gain coordinate fields.
+
+Invalid, ambiguous, unsupported or unresolved links return the existing HTTP 422
+validation envelope with an error for `from_location_pin` or `to_location_pin`. Network
+errors/timeouts are sanitized and never silently clear an existing pin. No listing is
+inserted or updated on failure.
+
+Redirects are manual, at most three requests per pin, with HTTPS-only exact host/path
+validation at every hop. Credentials, fragments, non-443 ports, control characters and
+backslashes are rejected. Before each outbound request, all IPv4 DNS answers must be
+globally routable; private/reserved/mixed answers and missing IPv4 answers are rejected.
+The validated destination is pinned using cURL resolution while retaining TLS hostname
+verification. Proxies, automatic redirects and cookies are disabled. Header-only HEAD
+requests use a maximum 2-second connect timeout and 4-second request timeout, within a
+10-second redirect-chain budget checked between operations. System DNS lookup timing is
+controlled by the host OS resolver; the 10-second budget is not a hard interrupt of that
+lookup. Resolution runs before listing/customer row locks. PHP cURL and outbound HTTPS
+to the permitted Google hosts are required for short/share expansion. A link that does
+not provide safe HEAD redirects to an explicit pin returns 422; no scraping fallback.
+
 ## Scope update — archive plan canceled
 
 The owner canceled the proposed archive/soft-delete implementation after the read-only Phase 6B audit. No `archived_at`, `deleted_at`, archive flag, new listing status or migration is authorized or implemented. DELETE remains HTTP 409 until an existing safe deletion behavior can be reused without database/schema or website/admin workflow changes. Six working Phase 6 operations and their tests remain intact. References below to a retention policy describe the blocked route's current implementation, not approval to add archival.

@@ -192,6 +192,7 @@ class PostAdsController extends Controller
         $user_id = Auth::user()->id;
 
         if($request->isMethod('post')){
+            return DB::transaction(function () use ($request, $id, $user_id) {
 
             $data = $request->all();
             $request->validate([
@@ -203,7 +204,8 @@ class PostAdsController extends Controller
             $locationIds = \App\Support\Api\ListingCoordinates::available()
                 ? \App\Support\Api\ListingCoordinates::locationIds($data) : [];
 
-            $post_ad = PostAd::where(['id'=>$id])->first();
+            $post_ad = PostAd::whereKey($id)->lockForUpdate()->firstOrFail();
+            \App\Services\Api\ListingDeals::guardEdit($post_ad, array_replace($data, $locationIds));
             // image file delete start
             $image = $post_ad->image;
 
@@ -266,6 +268,7 @@ class PostAdsController extends Controller
                     $changes = array_replace($changes, $locationIds,
                         \App\Support\Api\ListingCoordinates::clearChangedLocations($locationIds, $current));
                 }
+                \App\Services\Api\ListingDeals::guardEdit($current, $changes);
                 PostAd::whereKey($id)->update($changes);
             });
 
@@ -278,6 +281,7 @@ class PostAdsController extends Controller
                 return redirect('/user/my-listing')->with('flash_message_success','Listing Updated Successfully!');
 
             }
+            });
             
         }
 
@@ -303,6 +307,9 @@ class PostAdsController extends Controller
     }
 
     public function deletePostAds($id = null){
+        return DB::transaction(function () use ($id) {
+            PostAd::whereKey($id)->lockForUpdate()->firstOrFail();
+            \App\Services\Api\ListingDeals::guardDelete((int)$id);
 
         $post_ad = PostAd::where(['id'=>$id])->first();
         // image file delete start
@@ -317,6 +324,7 @@ class PostAdsController extends Controller
         PostAd::where(['id'=>$id])->delete();
 
         return redirect()->back()->with('flash_message_success','Listing Deleted Successfully!');
+        });
         
     }
 }

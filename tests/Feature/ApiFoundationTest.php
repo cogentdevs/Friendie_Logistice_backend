@@ -196,13 +196,18 @@ class ApiFoundationTest extends TestCase
             'api/v1/customer/conversations/{id}',
             'api/v1/customer/conversations/{id}/messages', 'api/v1/customer/conversations/{id}/messages',
             'api/v1/customer/conversations/{id}/read', 'api/v1/customer/dashboard',
+            'api/v1/customer/deals', 'api/v1/customer/deals', 'api/v1/customer/deals/{id}',
+            'api/v1/customer/deals/{id}/accept', 'api/v1/customer/deals/{id}/cancel',
+            'api/v1/customer/deals/{id}/complete', 'api/v1/customer/deals/{id}/confirm', 'api/v1/customer/deals/{id}/contact',
+            'api/v1/customer/deals/{id}/pickup', 'api/v1/customer/deals/{id}/reject',
             'api/v1/customer/listings', 'api/v1/customer/listings',
             'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}', 'api/v1/customer/listings/{id}',
             'api/v1/customer/listings/{id}/image', 'api/v1/customer/listings/{id}/image',
+            'api/v1/customer/notifications', 'api/v1/customer/notifications/counts', 'api/v1/customer/notifications/{id}/read',
             'api/v1/customer/profile', 'api/v1/customer/profile',
             'api/v1/customer/profile/avatar', 'api/v1/customer/profile/avatar',
             'api/v1/customer/reviews', 'api/v1/customer/reviews/given', 'api/v1/customer/reviews/received',
-            'api/v1/health', 'api/v1/home', 'api/v1/listings', 'api/v1/listings/{id}',
+            'api/v1/health', 'api/v1/home', 'api/v1/listings', 'api/v1/listings/{id}', 'api/v1/listings/{id}/reviews',
         ], $apiRoutes->map(fn ($route) => $route->uri())->sort()->values()->all());
     }
 

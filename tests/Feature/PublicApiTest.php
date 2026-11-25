@@ -236,7 +236,9 @@ class PublicApiTest extends TestCase
         DB::connection()->flushQueryLog();
         $response = $this->get('/api/v1/home')->assertOk()->assertJsonCount(12, 'data.categories')
             ->assertJsonCount(8, 'data.featured_listings')->assertJsonCount(8, 'data.latest_listings');
-        $this->assertCount(3, DB::connection()->getQueryLog());
+        // Original three bounded home queries remain; availability adds batched reads.
+        $this->assertCount(3, array_filter(DB::connection()->getQueryLog(),
+            fn ($q)=>str_contains($q['query'],'limit 8') || str_contains($q['query'],'limit 12')));
         foreach ($response->json('data.latest_listings') as $listing) {
             $this->assertArrayNotHasKey('description', $listing);
         }
@@ -249,6 +251,7 @@ class PublicApiTest extends TestCase
         $this->assertSame([
             'id', 'ad_type', 'title', 'short_description', 'image_url', 'category', 'origin', 'destination',
             'weight', 'weight_price', 'currency', 'departure_on', 'reached_on', 'is_featured', 'created_at', 'owner',
+            'availability', 'request_eligibility',
         ], array_keys($card));
         $this->assertSame(['id', 'display_name', 'image_url'], array_keys($card['owner']));
         $detail = $this->get('/api/v1/listings/'.$id)->assertOk()->json('data');

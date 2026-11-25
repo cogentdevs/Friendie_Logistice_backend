@@ -1,6 +1,126 @@
 # Friendie Logistics — Customer Reviews API v1
 
-Phase 8, API-only. Three endpoints expose the existing listing-owner feedback system. No website/admin, chat, listing, authentication, model, mail, database schema or earlier API contract changes. Examples are synthetic.
+The approved completed-deal Phase 8A contract below supersedes the earlier listing-only
+submission/public-visibility rules documented later in this file. Historical sections are
+retained as prior-phase evidence. Examples are synthetic.
+
+## Current Phase 8A: completed-deal reviews and public listing ratings
+
+Existing review storage, 0..5 integer ratings (including zero), required nonempty review
+text, NUL rejection and LONGTEXT compatibility are reused. No review editing, deletion,
+moderation, email, notification or new dependency is introduced.
+
+### Submit a completed-deal review
+
+`POST {{base_url}}/customer/reviews`, eligible customer Sanctum bearer authentication:
+
+```json
+{"deal_id":51,"rating":5,"review":"Helpful communication."}
+```
+
+Required fields are now **deal_id, rating, review**. The old `post_ads_id` mobile payload
+is no longer accepted; client reviewer/recipient/listing identities and unknown fields
+return 422. Existing customer-only, active/verified, mobile token and 10-attempts-per-15-
+minutes account/IP protections remain. A valid completed deal must identify the caller
+as its stored sender or carrier. Missing, unrelated and noncompleted deals return the
+same 404 without listing metadata. Corrupt self-deals cannot create reviews (409).
+
+Reviewer is the authenticated user; recipient is the other stored deal participant.
+A sender reviews the carrier's listing; a carrier reviews the sender's listing. Current
+listing ownership, route edits, expiry, publication and deletion cannot redirect that
+recipient or prevent an otherwise authorized completed-deal review. A chat room is not
+required. A completed deal is required even when the target listing is publicly visible.
+
+Success remains HTTP 201, `Review submitted successfully.`, with the existing explicit
+review object plus nullable/integer `deal_id`. Its other fields remain `id`, `listing`
+`{id,title}`, `reviewer` `{id,display_name}`, `reviewed_customer` `{id,display_name}`,
+`rating`, `review`, `date_time`, `created_at`, `updated_at`. Duplicate reviewer/deal
+submissions return 409 `You have already reviewed this deal.` without overwriting data.
+Either participant may submit one independent review; another completed deal permits a
+new review even for the same listing. Legacy listing/reviewer duplicates do not block a
+new verified deal review.
+
+The shared writer locks the authenticated reviewer, then completed deal, checks duplicates
+and inserts in one transaction with three deadlock retries. API token revocation is
+rechecked while the reviewer is locked. Website and API submissions use this same lock
+and unique key; storage failure rolls back without changing any deal, capacity, listing,
+chat or notification state. Recipient eligibility is not retroactively reinterpreted;
+stored deal identities remain usable when the counterpart account is inactive/deleted.
+
+### Authenticated history
+
+`GET /customer/reviews/given` and `GET /customer/reviews/received` retain customer scoping,
+newest-review-ID ordering, `page`, and `per_page` (20 default, 50 maximum). Existing legacy
+rows have `deal_id:null` and are preserved without backfill/deduplication. Missing parent
+listing/reviewer rows now remain in authenticated API history with unavailable labels
+null. New deal-linked reviews use safe recorded counterpart listing titles and participant
+names from the authorized deal snapshots, preserving history after editing/deletion.
+Fields missing from older snapshots stay null; no historical names are fabricated.
+
+Private history retains existing raw review-text compatibility; display as plain text,
+never trusted HTML. No phone/email account fields, exact coordinates or addresses are
+selected or serialized. GET performs no writes. Existing website history pages are not
+changed and retain their existing join/display behavior.
+
+### Public listing reviews and average
+
+`GET {{base_url}}/listings/102/reviews?page=1&per_page=20`, no authentication required.
+The target listing must pass unchanged `PublicListingQuery` visibility. Missing/nonpublic
+listings return identical 404. Expired/deleted listing reviews remain privately accessible
+through participant history; this endpoint does not expose nonpublic listings.
+
+Success is HTTP 200 with the usual envelope and these `data` fields:
+
+```json
+{"listing_id":102,"average_rating":4.5,"review_count":2,"items":[{"id":301,"reviewer":{"id":201,"display_name":"Example Sender"},"rating":5,"review":"Helpful communication.","date_time":"2030-01-03","created_at":"2030-01-03 10:00:00","updated_at":"2030-01-03 10:00:00"}],"pagination":{"current_page":1,"per_page":20,"total":2,"last_page":2}}
+```
+
+Only rows linked to an existing **completed** deal, with correct reciprocal participant
+IDs and counterpart listing ID, a non-self reviewer and rating 0..5 are included. The
+review recipient must also match the target listing's current owner, avoiding attributing
+historical feedback to a later owner. Legacy/null, missing-deal, noncompleted and mismatched
+rows do not affect public items, average or count. The aggregate covers the entire filtered
+listing result, not just the current page; zero ratings count normally. Average is rounded
+to one decimal. No reviews means `average_rating:null`, `review_count:0`, `items:[]`.
+
+Pagination defaults to 20, maximum 50, ordered by descending review ID. Unknown query
+fields/invalid pagination return 422. Public items omit deal IDs, recipient identities,
+private listing metadata and raw snapshots. Names and text use the existing contact-
+filtering plain-text serializer; public review text is bounded to 10,000 characters and
+contact-bearing text may be null. Clients must render it as plain text. Aggregation and
+pagination reuse the same verified scope and joined queries; no per-item queries.
+
+### Minimum website safeguard and remaining UI limitations
+
+Only `UserController::postRateReview()` submission handling changes. Authentication and
+eligible-customer rules are enforced, rating/text validated, submitted hidden identities
+cross-checked, and target identities derived by the shared writer. Existing form fields,
+CSRF/routes, redirects, flash message, Blade, CSS/JS and admin code remain unchanged.
+The existing form may omit `deal_id`: exactly one matching completed deal is required.
+None returns 404; multiple returns 409 `Select the completed deal explicitly.` Supplying
+an explicit deal ID must still match the posted listing and any posted identities.
+
+No UI deal picker is added. Existing website listing-based duplicate-button disabling
+and legacy owner-wide website rating calculations remain unchanged; they can limit web
+submission for later deals or differ from this verified listing-scoped API aggregate.
+These presentation changes require separate approval. New API requests can select deals
+explicitly. Website/HTML rendering and real browser workflows were not redesigned.
+
+### Approved schema and manual deployment
+
+Migration adds only nullable BIGINT UNSIGNED `reviews.deal_id`, unique
+`(deal_id,from_user_id)` and pagination index `(post_ads_id,id)`. There are no foreign-key
+cascades or data rewrites; null legacy rows remain compatible with the unique index.
+After validating the database target and backup, the owner manually runs:
+
+```powershell
+php artisan migrate --database=mysql --path=database/migrations/2026_11_25_000004_add_deal_id_to_reviews_table.php
+```
+
+This migration was not executed against the original database. Until deployed, new API
+and website review writes and the new public review endpoint fail safely with 503.
+Authenticated legacy API history still works. Rollback loses review/deal provenance and
+must not be performed blindly on a populated database. No original reviews are backfilled.
 
 ## Verified schema and website evidence
 

@@ -5,10 +5,36 @@ namespace App\Support\Api;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
-/** Private listing pins. No model hooks, geocoding or external services. */
+/** Private listing pins; existing numeric validation remains authoritative. */
 final class ListingCoordinates
 {
     public const FIELDS = ['from_latitude', 'from_longitude', 'to_latitude', 'to_longitude'];
+    public const PIN_INPUTS = ['from_location_pin','to_location_pin'];
+
+    /** Resolve optional API-only inputs before acquiring customer/listing transaction locks. */
+    public static function resolvePins(array $input): array
+    {
+        foreach (['from','to'] as $side) {
+            $key=$side.'_location_pin';
+            if (!array_key_exists($key,$input)) continue;
+            if (array_key_exists($side.'_latitude',$input) || array_key_exists($side.'_longitude',$input)) {
+                throw ValidationException::withMessages([$key=>['Use a location pin or latitude/longitude fields, not both.']]);
+            }
+            $value=$input[$key]; unset($input[$key]);
+            if (!self::available()) throw ValidationException::withMessages([$key=>['Location pins are not available yet.']]);
+            if ($value===null || $value==='') $pair=[null,null];
+            else {
+                try {
+                    if (!is_string($value) || strlen($value)>4096) throw new \InvalidArgumentException();
+                    $pair=app(\App\Services\Api\GoogleMapsPinResolver::class)->resolve($value);
+                } catch (\Throwable) {
+                    throw ValidationException::withMessages([$key=>['Supply a latitude, longitude pair or a supported Google Maps link that resolves to one exact pin.']]);
+                }
+            }
+            [$input[$side.'_latitude'],$input[$side.'_longitude']]=$pair;
+        }
+        return $input;
+    }
 
     public static function available(): bool
     {

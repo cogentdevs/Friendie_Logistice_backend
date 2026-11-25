@@ -1,6 +1,13 @@
 # Friendie Logistics — Customer Chat API v1
 
-Phase 7 backend-only. Six routes use existing tables; no schema, migrations, website/admin code, mail flows, image behavior or prior API contracts are changed. All examples are synthetic.
+**Phase 5A update:** the historical Phase 7 creation/send rules below are superseded by
+[Listing deals — accepted-deal contact and chat](LISTING_DEALS_V1.md#accepted-deal-contact-and-chat--phase-5a).
+Conversation creation now requires `deal_id` and `message`; listing-only creation is rejected.
+Only that dedicated conversation's unexpired accepted/confirmed deal authorizes sending.
+Closed/completed and unbound legacy rooms are read-only. Phone/pins are returned only by
+`GET /api/v1/customer/deals/{id}/contact`, never these generic chat responses.
+
+Historical Phase 7 contract follows. All examples are synthetic.
 
 ## Verified existing model
 

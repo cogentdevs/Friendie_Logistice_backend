@@ -19,6 +19,7 @@ class CustomerChatTest extends TestCase
     private User $stranger;
     private string $token;
     private int $listing;
+    private int $senderListing;
     private string $base = '/api/v1/customer/conversations';
 
     protected function setUp(): void
@@ -36,7 +37,16 @@ class CustomerChatTest extends TestCase
         $city=DB::table('cities')->insertGetId(['name'=>'Alpha City','country_id'=>$country,'isActive'=>1]);
         $this->listing=DB::table('post_ads')->insertGetId(['created_by'=>$this->owner->id,'category_id'=>$category,
             'from_country_id'=>$country,'to_country_id'=>$country,'from_city_id'=>$city,'to_city_id'=>$city,
-            'ad_type'=>'Carring','title'=>'Parcel capacity','show_contact_info'=>0,'isActive'=>1,'departure_on'=>'2030-01-01']);
+            'ad_type'=>'Carring','title'=>'Parcel capacity','weight'=>100,'show_contact_info'=>0,'isActive'=>1,'departure_on'=>'2030-01-01']);
+        $sender=(array)DB::table('post_ads')->find($this->listing);unset($sender['id']);
+        $this->senderListing=DB::table('post_ads')->insertGetId(array_replace($sender,['created_by'=>$this->actor->id,'ad_type'=>'Send','weight'=>5]));
+    }
+
+    private function deal(array $extra=[]): int
+    {
+        return DB::table('listing_deals')->insertGetId(array_replace(['sender_listing_id'=>$this->senderListing,'carrier_listing_id'=>$this->listing,
+            'sender_user_id'=>$this->actor->id,'carrier_user_id'=>$this->owner->id,'initiated_by'=>$this->actor->id,
+            'requested_kg'=>5,'agreed_kg'=>5,'status'=>'confirmed','listing_snapshot'=>'{}','created_at'=>now(),'updated_at'=>now()],$extra));
     }
 
     private function headers(?string $token=null): array
@@ -45,8 +55,10 @@ class CustomerChatTest extends TestCase
     }
     private function room(?int $from=null,?int $to=null): int
     {
-        return DB::table('post_ad_rooms')->insertGetId(['post_ads_id'=>$this->listing,
+        $id=DB::table('post_ad_rooms')->insertGetId(['post_ads_id'=>$this->listing,
             'from_user_id'=>$from??$this->actor->id,'to_user_id'=>$to??$this->owner->id,'created_at'=>now()]);
+        if (($from??$this->actor->id)===$this->actor->id && ($to??$this->owner->id)===$this->owner->id) $this->deal(['conversation_id'=>$id]);
+        return $id;
     }
     private function message(int $room,int $from,int $to,?string $read=null,string $text='Hello'): int
     {
@@ -74,7 +86,7 @@ class CustomerChatTest extends TestCase
     }
     public function test_creation_is_atomic_neutral_about_contacts_and_reuses_room_without_duplicate_message(): void
     {
-        $data=['post_ads_id'=>$this->listing,'message'=>'Hello'];
+        $data=['deal_id'=>$this->deal(),'message'=>'Hello'];
         $r=$this->postJson($this->base,$data,$this->headers())->assertCreated();$id=$r->json('data.id');
         $r->assertJsonPath('data.other_participant.id',$this->owner->id);
         $this->postJson($this->base,$data,$this->headers())->assertOk()->assertJsonPath('data.id',$id);
@@ -84,23 +96,20 @@ class CustomerChatTest extends TestCase
         $this->assertStringNotContainsString('private@example.test',$r->getContent());
         $this->assertStringNotContainsString('+1000000000',$r->getContent());Mail::assertNothingSent();Notification::assertNothingSent();
     }
-    public function test_invalid_private_expired_self_and_ineligible_targets_cannot_create(): void
+    public function test_only_valid_deal_participants_can_create_and_old_listing_only_creation_is_rejected(): void
     {
-        $this->postJson($this->base,['post_ads_id'=>999999,'message'=>'Hello'],$this->headers())->assertNotFound();
-        foreach ([0,2] as $status) {
-            DB::table('post_ads')->where('id',$this->listing)->update(['isActive'=>$status]);
-            $this->postJson($this->base,['post_ads_id'=>$this->listing,'message'=>'Hello'],$this->headers())->assertNotFound();
-        }
-        DB::table('post_ads')->where('id',$this->listing)->update(['isActive'=>1,'departure_on'=>'2026-11-14']);
-        $this->postJson($this->base,['post_ads_id'=>$this->listing,'message'=>'Hello'],$this->headers())->assertNotFound();
-        DB::table('post_ads')->where('id',$this->listing)->update(['departure_on'=>'2030-01-01']);
-        $this->owner->syncRoles(['admin']);
-        $this->postJson($this->base,['post_ads_id'=>$this->listing,'message'=>'Hello'],$this->headers())->assertNotFound();
-        DB::table('post_ads')->where('id',$this->listing)->update(['created_by'=>$this->actor->id]);
+        $this->postJson($this->base,['deal_id'=>999999,'message'=>'Hello'],$this->headers())->assertNotFound();
         $this->postJson($this->base,['post_ads_id'=>$this->listing,'message'=>'Hello'],$this->headers())->assertUnprocessable();
+        foreach (['pending','rejected','cancelled','expired','completed'] as $status) {
+            $this->postJson($this->base,['deal_id'=>$this->deal(['status'=>$status]),'message'=>'Hello'],$this->headers())->assertForbidden();
+        }
+        $id=$this->deal();$this->owner->syncRoles(['admin']);
+        $this->postJson($this->base,['deal_id'=>$id,'message'=>'Hello'],$this->headers())->assertForbidden();
+        $this->owner->syncRoles(['user']);
+        DB::table('post_ads')->where('id',$this->listing)->update(['created_by'=>$this->actor->id]);
+        $this->postJson($this->base,['deal_id'=>$id,'message'=>'Hello'],$this->headers())->assertForbidden();
         $this->assertSame(0,DB::table('post_ad_rooms')->count());
-    }
-    public static function invalidMessages(): array
+    }    public static function invalidMessages(): array
     {
         return [[[]],[['message'=>'']],[['message'=>'   ']],[['message'=>['x']]],[['message'=>str_repeat('a',10001)]],
             [['message'=>"bad\0text"]],[['message'=>'Hi','sender_id'=>1]],[['message'=>'Hi','user_id'=>1]],
@@ -110,7 +119,7 @@ class CustomerChatTest extends TestCase
     public function test_invalid_messages_and_impersonation_rejected(array $data): void
     {
         $id=$this->room();$this->postJson($this->base.'/'.$id.'/messages',$data,$this->headers())->assertUnprocessable();
-        $this->postJson($this->base,$data+['post_ads_id'=>$this->listing],$this->headers())->assertUnprocessable();
+        $this->postJson($this->base,$data+['deal_id'=>DB::table('listing_deals')->where('conversation_id',$id)->value('id')],$this->headers())->assertUnprocessable();
         $this->assertSame(0,DB::table('post_ad_room_messages')->count());
     }
     public function test_idor_and_forged_room_ownership_fail_closed(): void
@@ -176,7 +185,7 @@ class CustomerChatTest extends TestCase
     {
         $before=DB::table('post_ads')->get()->toJson();
         DB::connection()->beforeExecuting(function ($sql) {if(str_starts_with(strtolower($sql),'insert into `post_ad_room_messages`'))throw new \RuntimeException('Synthetic failure');});
-        $this->postJson($this->base,['post_ads_id'=>$this->listing,'message'=>'Hello'],$this->headers())->assertStatus(500);
+        $this->postJson($this->base,['deal_id'=>$this->deal(),'message'=>'Hello'],$this->headers())->assertStatus(500);
         $this->assertSame(0,DB::table('post_ad_rooms')->count());$this->assertSame($before,DB::table('post_ads')->get()->toJson());Mail::assertNothingSent();
     }
     public function test_rate_limiting_mutations(): void

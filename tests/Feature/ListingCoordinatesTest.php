@@ -45,6 +45,64 @@ class ListingCoordinatesTest extends TestCase
         if (! ListingCoordinates::available()) $this->markTestSkipped('User must manually apply the coordinate migration to the isolated schema.');
     }
 
+    public function test_api_accepts_maps_links_and_pair_strings_without_saving_urls(): void
+    {
+        $this->migrated();
+        \Illuminate\Support\Facades\Http::fake();
+        $id=$this->postJson('/api/v1/customer/listings',$this->fields+[
+            'from_location_pin'=>'https://www.google.com/maps?q=24.8607343,67.0011364',
+            'to_location_pin'=>'0, 0',
+        ],$this->headers())->assertCreated()->assertJsonPath('data.from_latitude',24.8607343)
+            ->assertJsonPath('data.to_longitude',0)->assertJsonMissingPath('data.from_location_pin')->json('data.id');
+        $this->assertSame('24.8607343',DB::table('post_ads')->where('id',$id)->value('from_latitude'));
+        $this->putJson('/api/v1/customer/listings/'.$id,['to_location_pin'=>'https://maps.google.com/?q=-33.8688197,151.2092955'],$this->headers())
+            ->assertOk()->assertJsonPath('data.to_latitude',-33.8688197)->assertJsonPath('data.from_latitude',24.8607343);
+        $this->putJson('/api/v1/customer/listings/'.$id,['title'=>'Same pins'],$this->headers())->assertOk()->assertJsonPath('data.to_latitude',-33.8688197);
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_location_pin'=>null],$this->headers())->assertOk()->assertJsonPath('data.from_latitude',null)
+            ->assertJsonPath('data.from_longitude',null)->assertJsonPath('data.to_latitude',-33.8688197);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_invalid_maps_pin_and_conflicting_inputs_do_not_mutate_listing_or_leak_link_details(): void
+    {
+        $this->migrated(); $id=$this->create(['from_latitude'=>1,'from_longitude'=>2]);
+        $resolver=\Mockery::mock(\App\Services\Api\GoogleMapsPinResolver::class)->makePartial()->shouldAllowMockingProtectedMethods();
+        $resolver->shouldReceive('addresses')->andReturn(['8.8.8.8']);
+        app()->instance(\App\Services\Api\GoogleMapsPinResolver::class,$resolver);
+        $before=DB::table('post_ads')->find($id);
+        foreach ([['from_location_pin'=>'https://127.0.0.1/maps?q=1,2'],['from_location_pin'=>[]],
+            ['from_location_pin'=>'1,2','from_latitude'=>1,'from_longitude'=>2],
+            ['from_location_pin'=>'https://www.google.com/maps?q=91,0']] as $input) {
+            \Illuminate\Support\Facades\Http::fake(fn()=>\Illuminate\Support\Facades\Http::response('',200));
+            $reply=$this->putJson('/api/v1/customer/listings/'.$id,$input,$this->headers())->assertUnprocessable()->assertJsonValidationErrors('from_location_pin');
+            $this->assertStringNotContainsString('127.0.0.1',$reply->getContent());
+            $this->assertEquals($before,DB::table('post_ads')->find($id));
+        }
+    }
+
+    public function test_short_maps_link_resolves_before_locks_and_timeout_leaves_existing_pin_unchanged(): void
+    {
+        $this->migrated(); $id=$this->create(['from_latitude'=>1,'from_longitude'=>2]);
+        $resolver=\Mockery::mock(\App\Services\Api\GoogleMapsPinResolver::class)->makePartial()->shouldAllowMockingProtectedMethods();
+        $resolver->shouldReceive('addresses')->andReturn(['8.8.8.8']);
+        app()->instance(\App\Services\Api\GoogleMapsPinResolver::class,$resolver);
+        $outerLevel=DB::transactionLevel();
+        \Illuminate\Support\Facades\Http::fake(function () use ($outerLevel) {
+            $this->assertSame($outerLevel,DB::transactionLevel(),'External resolution must precede listing/customer locks.');
+            return \Illuminate\Support\Facades\Http::response('',302,['Location'=>'https://www.google.com/maps?q=3,4']);
+        });
+        $this->putJson('/api/v1/customer/listings/'.$id,['from_location_pin'=>'https://maps.app.goo.gl/example'],$this->headers())
+            ->assertOk()->assertJsonPath('data.from_latitude',3)->assertJsonPath('data.from_longitude',4);
+        $before=DB::table('post_ads')->find($id);
+        \Illuminate\Support\Facades\Http::fake(fn()=>throw new \Illuminate\Http\Client\ConnectionException('Synthetic timeout: private transport detail'));
+        $response=$this->putJson('/api/v1/customer/listings/'.$id,['from_location_pin'=>'https://maps.app.goo.gl/timeout'],$this->headers())
+            ->assertUnprocessable()->assertJsonValidationErrors('from_location_pin');
+        $this->assertStringNotContainsString('private transport detail',$response->getContent());
+        $this->assertEquals($before,DB::table('post_ads')->find($id));
+        $this->putJson('/api/v1/customer/listings/'.$id,['to_location_pin'=>'0,0','to_city_id'=>$this->fields['to_city_id']],$this->headers())
+            ->assertOk()->assertJsonPath('data.to_latitude',0);
+    }
+
     private function headers(?string $token = null): array
     {
         app('auth')->forgetGuards();
@@ -161,7 +219,12 @@ class ListingCoordinatesTest extends TestCase
         $this->getJson('/api/v1/customer/listings/'.$id)->assertUnauthorized();
         $this->getJson('/api/v1/customer/listings/'.$id, $this->headers($otherToken))->assertNotFound();
         $this->putJson('/api/v1/customer/listings/'.$id, ['from_latitude'=>0, 'from_longitude'=>0], $this->headers($otherToken))->assertNotFound();
-        $room = $this->postJson('/api/v1/customer/conversations', ['post_ads_id'=>$id, 'message'=>'Hello'], $this->headers($otherToken))->assertCreated();
+        $sender=DB::table('post_ads')->insertGetId($this->fields+['created_by'=>$this->other->id,'isActive'=>1,'show_contact_info'=>0]);
+        DB::table('post_ads')->where('id',$sender)->update(['ad_type'=>'Send']);
+        $deal=DB::table('listing_deals')->insertGetId(['sender_listing_id'=>$sender,'carrier_listing_id'=>$id,
+            'sender_user_id'=>$this->other->id,'carrier_user_id'=>$this->owner->id,'initiated_by'=>$this->other->id,
+            'requested_kg'=>5,'agreed_kg'=>5,'status'=>'confirmed','listing_snapshot'=>'{}']);
+        $room = $this->postJson('/api/v1/customer/conversations', ['deal_id'=>$deal, 'message'=>'Hello'], $this->headers($otherToken))->assertCreated();
         $review = $this->postJson('/api/v1/customer/reviews', ['post_ads_id'=>$id, 'rating'=>0, 'review'=>'Good'], $this->headers($otherToken))->assertCreated();
         foreach (ListingCoordinates::FIELDS as $key) { $room->assertDontSee($key); $review->assertDontSee($key); }
         $history = $this->getJson('/api/v1/customer/reviews/given', $this->headers($otherToken))->assertOk();
@@ -212,7 +275,9 @@ class ListingCoordinatesTest extends TestCase
     public function test_missing_schema_keeps_legacy_create_detail_and_web_edit_working_and_rejects_new_pins(): void
     {
         // Simulate unavailable columns without executing DDL on any database.
+        $dealTable = Schema::hasTable('listing_deals');
         Schema::shouldReceive('hasColumns')->with('post_ads', ListingCoordinates::FIELDS)->andReturn(false);
+        Schema::shouldReceive('hasTable')->with('listing_deals')->andReturn($dealTable);
         $id = $this->create();
         $this->getJson('/api/v1/customer/listings/'.$id, $this->headers())->assertOk()->assertJsonPath('data.from_latitude', null);
         $this->putJson('/api/v1/customer/listings/'.$id, ['title'=>'Legacy edit'], $this->headers())->assertOk();

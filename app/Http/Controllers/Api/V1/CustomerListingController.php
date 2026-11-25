@@ -75,7 +75,7 @@ final class CustomerListingController
         return $request->only($allowed);
     }
 
-    private function serialize(object $row): array
+    private function serialize(object $row, ?array $availability = null): array
     {
         // Owner-only editable data, deliberately no user joins or contact fields.
         $result = [];
@@ -94,7 +94,7 @@ final class CustomerListingController
         $result['show_contact_info'] = (int)$row->show_contact_info;
         $result['image_url'] = PublicData::image($row->image, 'frontend/img/listing');
 
-        return $result;
+        return $result + ($availability ?? \App\Services\Api\ListingDeals::listingData([$row],request())[$row->id]);
     }
 
     public function index(Request $request): JsonResponse
@@ -112,8 +112,10 @@ final class CustomerListingController
             default=>$query->orderByDesc('id'),
         };
         $page = $query->paginate($input['per_page'] ?? 20, ['*'], 'page', $input['page'] ?? 1);
+        $availability=\App\Services\Api\ListingDeals::listingData($page->getCollection(),$request);
 
-        return ApiResponse::success('Your listings retrieved successfully.', PublicData::page($page, $this->serialize(...)))
+        return ApiResponse::success('Your listings retrieved successfully.', PublicData::page($page,
+            fn ($row)=>$this->serialize($row,$availability[$row->id])))
             ->header('Cache-Control','no-store, private');
     }
 
@@ -129,6 +131,7 @@ final class CustomerListingController
     {
         $this->limit($request,'create',10,3600);
         $input = $this->input($request, CustomerListingFields::EDITABLE);
+        $input = \App\Support\Api\ListingCoordinates::resolvePins($input);
         $listing = DB::transaction(function () use ($request,$input) {
             $this->lockCustomer($request);
             $data = CustomerListingFields::validate($input);
@@ -148,9 +151,11 @@ final class CustomerListingController
         $this->limit($request,'update',30,900);
         $this->owned($request,$id);
         $input = $this->input($request, CustomerListingFields::EDITABLE);
+        $input = \App\Support\Api\ListingCoordinates::resolvePins($input);
         $listing = DB::transaction(function () use ($request,$id,$input) {
             $this->lockCustomer($request);$listing = $this->owned($request,$id,true);$this->editable($listing);
             $data = CustomerListingFields::validate($input,$listing);
+            \App\Services\Api\ListingDeals::guardEdit($listing, $data);
             if (array_key_exists('description', $data)) $data['description'] = \App\Support\ListingDescription::html($data['description']);
             DB::table('post_ads')->where('id',$listing->id)->where('created_by',$request->user()->id)
                 ->update($data + ['updated_at'=>now()]);
